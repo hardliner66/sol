@@ -5,13 +5,9 @@
             "name": "Debug",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/sol.exe",
-            "args": [],
-            "windows": {
-                "cwd": "${workspaceFolder}"
-            },
+            "program": "${workspaceFolder}/build/sol_demo.exe",
             "cwd": "${workspaceFolder}",
-            "preLaunchTask": "Build Debug",
+            "preLaunchTask": "Build Demo Debug",
         }
     ]
 }

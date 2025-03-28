@@ -2,14 +2,13 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Build Debug",
+            "label": "Build Demo Debug",
             "type": "shell",
             "command": "odin",
             "args": [
                 "build",
-                "${workspaceFolder}",
-                "-out:build/sol.exe",
-                "-vet",
+                "${workspaceFolder}/demo",
+                "-out:build/sol_demo.exe",
                 "-debug",
             ],
             "presentation": {
