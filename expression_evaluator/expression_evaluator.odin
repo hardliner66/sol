@@ -2,27 +2,96 @@
 
 package expression_evaluator
 
+import "core:math"
 import "core:strconv"
 import "core:unicode"
 
+DIVISION_BY_ZERO_RETURNS_ZERO :: #config(DIVISION_BY_ZERO_RETURNS_ZERO, false)
+
+NAN :: math.INF_F32 + math.NEG_INF_F32
 
 Operator :: rune
 
-@(private)
-MakeDefaultPrecedenceMap :: proc() -> map[Operator]int {
+make_default_precedence_map :: proc() -> map[Operator]int {
 	return map[Operator]int{'+' = 1, '-' = 1, '*' = 2, '/' = 2}
 }
 
-DefaultPrecedenceMap := MakeDefaultPrecedenceMap()
+@(private)
+DefaultPrecedenceMap := make_default_precedence_map()
 
-OpProc :: proc(a: f32, b: f32) -> f32
-
-DefaultOpProcMap := map[rune]OpProc {
-	'+' = proc(a: f32, b: f32) -> f32 {return a + b},
-	'-' = proc(a: f32, b: f32) -> f32 {return a - b},
-	'*' = proc(a: f32, b: f32) -> f32 {return a * b},
-	'/' = proc(a: f32, b: f32) -> f32 {return a / b},
+VariableNotFound :: struct {
+	name: string,
 }
+
+OperatorError :: struct {
+	operator: Operator,
+	err:      string,
+}
+
+UnexpectedToken :: struct {
+	token: Token,
+}
+
+InvalidCharacter :: struct {
+	character: rune,
+}
+
+IncompleteExpression :: struct {
+}
+
+ParseError :: union {
+	InvalidCharacter,
+	IncompleteExpression,
+}
+
+when !DIVISION_BY_ZERO_RETURNS_ZERO {
+	DivisionByZero :: struct {
+	}
+}
+
+EvalError :: union {
+		OperatorError,
+		VariableNotFound,
+		UnexpectedToken,
+	} when DIVISION_BY_ZERO_RETURNS_ZERO else union {
+		OperatorError,
+		VariableNotFound,
+		UnexpectedToken,
+		DivisionByZero,
+	}
+
+EvalResult :: union {
+	f32,
+	EvalError,
+}
+
+Error :: union #shared_nil {
+	EvalError,
+	ParseError,
+}
+
+OpProc :: proc(a: f32, b: f32) -> EvalResult
+
+make_default_op_proc_map :: proc() -> map[Operator]OpProc {
+	return {
+		'+' = proc(a: f32, b: f32) -> EvalResult {return a + b},
+		'-' = proc(a: f32, b: f32) -> EvalResult {return a - b},
+		'*' = proc(a: f32, b: f32) -> EvalResult {return a * b},
+		'/' = proc(a: f32, b: f32) -> EvalResult {
+			if b == 0.0 {
+				if DIVISION_BY_ZERO_RETURNS_ZERO {
+					return f32(0.0)
+				} else {
+					return EvalError(OperatorError{'/', "Division by zero"})
+				}
+			}
+			return a / b
+		},
+	}
+}
+
+@(private)
+DefaultOpProcMap := make_default_op_proc_map()
 
 @(private)
 Paren :: enum {
@@ -52,27 +121,6 @@ Token :: union {
 	Operator,
 }
 
-InvalidCharacter :: struct {
-	character: rune,
-}
-
-NoMoreTokens :: struct {
-}
-
-UnexpectedToken :: struct {
-	token: Token,
-}
-
-VariableNotFound :: struct {
-	name: Identifier,
-}
-
-Error :: union {
-	NoMoreTokens,
-	InvalidCharacter,
-	UnexpectedToken,
-	VariableNotFound,
-}
 
 @(private)
 lex :: proc(text: string, tokens: []Token, allocator := context.allocator) -> (err: Error) {
@@ -93,6 +141,15 @@ lex :: proc(text: string, tokens: []Token, allocator := context.allocator) -> (e
 		case '-', '0' ..= '9':
 			inner := text[i:]
 			count := 0
+			if ch == '-' {
+				if tokens[index - 1] != Paren.Open && tokens[index - 1] != Operator('(') {
+					tokens[index] = Operator(ch)
+					index += 1
+					i += 1
+					continue
+				}
+				count = 1
+			}
 			has_dot := false
 			for count < len(inner) &&
 			    (unicode.is_digit(rune(inner[count])) || inner[count] == '.') {
@@ -139,8 +196,7 @@ lex :: proc(text: string, tokens: []Token, allocator := context.allocator) -> (e
 				i += 1
 				continue
 			}
-			delete(tokens)
-			err = InvalidCharacter{rune(ch)}
+			err = ParseError(InvalidCharacter{rune(ch)})
 			return
 		}
 	}
@@ -206,7 +262,8 @@ expect_token :: proc(p: ^Parser, expected: Token) -> Token {
 }
 
 @(private)
-parse_primary :: proc(p: ^Parser, eb: ^ExpressionBlock) -> (id: int, err: Error) {
+parse_primary :: proc(p: ^Parser, eb: ^ExpressionBlock) -> (id: int, err: ParseError) {
+	id = -1
 	if expect_token(p, Paren.Open) != nil {
 		id = parse_expr_with_precedence(p, eb, 0) or_return
 
@@ -226,6 +283,9 @@ parse_primary :: proc(p: ^Parser, eb: ^ExpressionBlock) -> (id: int, err: Error)
 		id = eb.index
 		eb.index += 1
 	}
+	if id == -1 {
+		err = IncompleteExpression{}
+	}
 	return
 }
 
@@ -236,7 +296,7 @@ parse_expr_with_precedence :: proc(
 	min_precedence: int,
 ) -> (
 	id: int,
-	err: Error,
+	err: ParseError,
 ) {
 	left := parse_primary(p, eb) or_return
 	for {
@@ -302,14 +362,8 @@ TokenType :: enum {
 	Identifier,
 }
 
-@(require_results)
-parse :: proc(
-	input: string,
-	precedence_map := DefaultPrecedenceMap,
-) -> (
-	eb: ExpressionBlock,
-	err: Error,
-) {
+@(private)
+count_tokens :: proc(input: string) -> int {
 	last_token_type := TokenType.None
 	token_count := 0
 	for c in input {
@@ -338,11 +392,24 @@ parse :: proc(
 			last_token_type = TokenType.None
 		}
 	}
+	return token_count
+}
+
+@(require_results)
+parse :: proc(
+	input: string,
+	precedence_map := DefaultPrecedenceMap,
+) -> (
+	eb: ExpressionBlock,
+	err: Error,
+) {
+	token_count := count_tokens(input)
 	tokens: []Token = make([]Token, token_count)
 	defer delete(tokens)
 	lex(input, tokens) or_return
 
 	eb = {0, 0, make([]Expr, len(tokens))}
+	defer if err != nil do destroy_expr(eb)
 
 	parser := Parser {
 		tokens     = tokens[:],
@@ -388,8 +455,10 @@ internal_eval_expr :: proc(
 	operators: map[Operator]OpProc,
 ) -> (
 	result: f32,
-	err: Error,
+	err: EvalError,
 ) #no_bounds_check {
+	defer if err != nil do result = NAN
+
 	#partial switch e in expr {
 	case Literal:
 		result = value_to_float(e.value)
@@ -406,7 +475,11 @@ internal_eval_expr :: proc(
 		left = internal_eval_expr(eb.expressions[e.left], eb, variables, operators) or_return
 		right = internal_eval_expr(eb.expressions[e.right], eb, variables, operators) or_return
 		if op, ok := operators[e.op]; ok {
-			result = op(left, right)
+			tmp := op(left, right)
+			if result, ok = tmp.(f32); ok {
+				return
+			}
+			err = tmp.(EvalError)
 		} else {
 			err = UnexpectedToken{Operator(e.op)}
 		}
