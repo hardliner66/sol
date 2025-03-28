@@ -36,7 +36,7 @@ next :: proc "contextless" (it: ^$A/FixedDynamicArraySynchronizedIterator($T)) -
 sync_iter :: proc "contextless" (
 	a: ^$A/FixedDynamicArray($T),
 ) -> FixedDynamicArraySynchronizedIterator(T) {
-	return FixedDynamicArraySynchronizedIterator(T){a, -1, len(a^)}
+	return {a, -1, len(a^)}
 }
 
 FixedDynamicArray :: struct($T: typeid) {
@@ -45,7 +45,7 @@ FixedDynamicArray :: struct($T: typeid) {
 }
 
 create :: proc($T: typeid, capacity: int) -> FixedDynamicArray(T) {
-	return FixedDynamicArray(T){make([]T, capacity), 0}
+	return {make([]T, capacity), 0}
 }
 
 destroy :: proc(arr: ^FixedDynamicArray($T)) {
