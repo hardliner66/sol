@@ -1,1 +1,2 @@
-# sol
+# SOL - Steves Odin Library
+

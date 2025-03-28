@@ -1,0 +1,17 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/sol.exe",
+            "args": [],
+            "windows": {
+                "cwd": "${workspaceFolder}"
+            },
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "Build Debug",
+        }
+    ]
+}
