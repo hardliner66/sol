@@ -3,6 +3,13 @@
 This is a small collection of code I wrote, that I think might
 be useful for others as well.
 
+## Opaque
+Adds an opaque value type by basically reinterpreting a datatype as
+an array of bytes and storing that (+ type info). This can be used
+to write type-erased code, like the generic iterator.
+
+**WARNING: This code transmutes. Use at your own risk.**
+
 ## Iter
 The iter package defines an interface for iterators,
 which can be implemented to allow functions to take an iterator,

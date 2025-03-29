@@ -43,7 +43,7 @@ Iterator :: struct($State: typeid, $T: typeid) {
 }
 
 state :: proc "contextless" (it: ^OpaqueIterator($T), $S: typeid) -> ^S {
-	it := op.get_ptr(it.iter, Iterator(S, T))
+	it := op.get_ptr(&it.iter, Iterator(S, T))
 	return &it.state
 }
 

@@ -3,6 +3,8 @@ package demo
 import fda "../fixed_dynamic_array"
 import fda_iter "../fixed_dynamic_array/iter"
 
+import ba "../iter"
+
 import "core:mem"
 
 when RUN_FDA_DEMO {
@@ -77,14 +79,9 @@ when RUN_FDA_DEMO {
 			fda_iter.pop_back_safe(&it)
 			fda_iter.ordered_remove(&it, i)
 			fda_iter.unordered_remove(&it, i)
-			when USE_BASE_ITER {
-				state := ba.state(&it, fda_iter.FixedDynamicArraySynchronizedIteratorState(int))
-				fda_iter.ordered_remove(&it, fda.get_ptr(state.array, 0))
-				fda_iter.unordered_remove(&it, fda.get_ptr(state.array, 0))
-			} else {
-				fda_iter.ordered_remove(&it, fda.get_ptr(it.array, 0))
-				fda_iter.unordered_remove(&it, fda.get_ptr(it.array, 0))
-			}
+			state := ba.state(&it, fda_iter.FixedDynamicArraySynchronizedIteratorState(int))
+			fda_iter.ordered_remove(&it, fda.get_ptr(state.array, 0))
+			fda_iter.unordered_remove(&it, fda.get_ptr(state.array, 0))
 			break
 		}
 
