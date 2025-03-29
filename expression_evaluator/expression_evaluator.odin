@@ -11,7 +11,7 @@ NAN :: math.INF_F32 + math.NEG_INF_F32
 Operator :: rune
 
 PrecedenceMap :: map[Operator]int
-OpProcMap :: map[rune]OpProc
+OperatorMap :: map[rune]OperatorFunction
 
 VariableMap :: map[Identifier]Number
 
@@ -75,10 +75,10 @@ Error :: union #shared_nil {
 	ParseError,
 }
 
-OpProc :: proc(a: f32, b: f32) -> EvalResult
+OperatorFunction :: proc(a: f32, b: f32) -> EvalResult
 
-make_default_op_proc_map :: proc() -> OpProcMap {
-	result := make(OpProcMap)
+make_default_operator_map :: proc() -> OperatorMap {
+	result := make(OperatorMap)
 	result['+'] = proc(a: f32, b: f32) -> EvalResult {return a + b}
 	result['-'] = proc(a: f32, b: f32) -> EvalResult {return a - b}
 	result['*'] = proc(a: f32, b: f32) -> EvalResult {return a * b}
@@ -94,9 +94,6 @@ make_default_op_proc_map :: proc() -> OpProcMap {
 	}
 	return result
 }
-
-@(private)
-DefaultOpProcMap := make_default_op_proc_map()
 
 @(private)
 Paren :: enum {
@@ -403,12 +400,13 @@ count_tokens :: proc(input: string) -> int {
 @(require_results)
 parse :: proc(
 	input: string,
-	precedence_map: Maybe(PrecedenceMap),
+	precedence_map: Maybe(PrecedenceMap) = {},
 ) -> (
 	eb: ExpressionBlock,
 	err: Error,
 ) {
-	precedence_map := precedence_map.? or_else make_default_precedence_map()
+	pm := precedence_map.? or_else make_default_precedence_map()
+	defer if precedence_map == nil do delete(pm)
 	token_count := count_tokens(input)
 	tokens: []Token = make([]Token, token_count)
 	defer delete(tokens)
@@ -420,7 +418,7 @@ parse :: proc(
 	parser := Parser {
 		tokens     = tokens[:],
 		pos        = 0,
-		precedence = precedence_map,
+		precedence = pm,
 	}
 	eb.start = parse_expr_with_precedence(&parser, &eb, 0) or_return
 	return
@@ -457,8 +455,8 @@ value_to_float :: proc(n: Number) -> f32 {
 internal_eval_expr :: proc(
 	expr: Expr,
 	eb: ExpressionBlock,
-	variables: VariableMap,
-	operators: OpProcMap,
+	operators: OperatorMap,
+	variables: Maybe(VariableMap),
 ) -> (
 	result: f32,
 	err: EvalError,
@@ -469,7 +467,13 @@ internal_eval_expr :: proc(
 	case Literal:
 		result = value_to_float(e.value)
 	case Variable:
-		if v, ok := variables[e.name]; ok {
+		vars, ok := variables.(VariableMap)
+		if !ok {
+			err = VariableNotFound{e.name}
+			return
+		}
+		v: Number
+		if v, ok = vars[e.name]; ok {
 			result = value_to_float(v)
 		} else {
 
@@ -478,8 +482,8 @@ internal_eval_expr :: proc(
 	case Binary:
 		left: f32
 		right: f32
-		left = internal_eval_expr(eb.expressions[e.left], eb, variables, operators) or_return
-		right = internal_eval_expr(eb.expressions[e.right], eb, variables, operators) or_return
+		left = internal_eval_expr(eb.expressions[e.left], eb, operators, variables) or_return
+		right = internal_eval_expr(eb.expressions[e.right], eb, operators, variables) or_return
 		if op, ok := operators[e.op]; ok {
 			tmp := op(left, right)
 			if result, ok = tmp.(f32); ok {
@@ -496,25 +500,23 @@ internal_eval_expr :: proc(
 @(require_results)
 eval_expr :: proc(
 	eb: ExpressionBlock,
-	variables: Maybe(VariableMap),
-	operators: Maybe(OpProcMap),
+	variables: Maybe(VariableMap) = {},
+	operators: Maybe(OperatorMap) = {},
 ) -> (
 	result: f32,
 	err: Error,
 ) #no_bounds_check {
-	var := variables.? or_else make(VariableMap)
-	defer if variables == nil do delete(var)
-	op := operators.? or_else make(OpProcMap)
+	op := operators.? or_else make_default_operator_map()
 	defer if operators == nil do delete(op)
-	return internal_eval_expr(eb.expressions[eb.start], eb, var, op)
+	return internal_eval_expr(eb.expressions[eb.start], eb, op, variables)
 }
 
 @(require_results)
 eval :: proc(
 	text: string,
-	variables: Maybe(VariableMap),
-	operators: Maybe(OpProcMap),
-	precedence_map: Maybe(PrecedenceMap),
+	variables: Maybe(VariableMap) = {},
+	operators: Maybe(OperatorMap) = {},
+	precedence_map: Maybe(PrecedenceMap) = {},
 ) -> (
 	f: f32,
 	err: Error,

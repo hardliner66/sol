@@ -18,7 +18,7 @@ when RUN_EE_DEMO {
 		assert(e == nil)
 		defer ee.destroy_expr(eb)
 
-		operators := ee.make_default_op_proc_map()
+		operators := ee.make_default_operator_map()
 		defer delete(operators)
 
 		operators['^'] = proc(a: f32, b: f32) -> ee.EvalResult {return math.pow(a, b)}
