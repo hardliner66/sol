@@ -4,8 +4,18 @@ import "core:mem"
 import "core:testing"
 
 @(test)
-test_fixed_dynamic_array :: proc(t: ^testing.T) {
+test_resize :: proc(t: ^testing.T) {
 	// Test creation
+	arr := create(int, 5)
+	defer destroy(&arr)
+
+	resize(&arr, 10)
+	testing.expect(t, cap(arr) == 10)
+	testing.expect(t, len(arr) == 0)
+}
+
+@(test)
+test_fixed_dynamic_array :: proc(t: ^testing.T) {
 	arr := create(int, 5)
 	defer destroy(&arr)
 
@@ -73,10 +83,5 @@ test_fixed_dynamic_array :: proc(t: ^testing.T) {
 
 	// Test clear
 	clear(&arr)
-	testing.expect(t, len(arr) == 0)
-
-	// Test resize
-	resize(&arr, 10)
-	testing.expect(t, cap(arr) == 10)
 	testing.expect(t, len(arr) == 0)
 }

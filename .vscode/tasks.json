@@ -31,14 +31,14 @@
             ]
         },
         {
-            "label": "Build Tests",
+            "label": "Run Tests",
             "type": "shell",
             "command": "odin",
             "args": [
-                "build",
+                "test",
                 "${workspaceFolder}/tests",
                 "-out:build/tests.exe",
-                "-build-mode:test",
+                "-all-packages",
                 "-debug",
             ],
             "presentation": {
@@ -51,7 +51,7 @@
             },
             "group": {
                 "kind": "build",
-                "isDefault": false
+                "isDefault": true
             },
             "dependsOn": [
                 "Create Build Directory"

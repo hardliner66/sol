@@ -4,12 +4,15 @@ package demo
 
 RUN_FDA_DEMO :: #config(RUN_FDA_DEMO, true)
 RUN_EE_DEMO :: #config(RUN_EE_DEMO, true)
+RUN_ITER_DEMO :: #config(RUN_ITER_DEMO, true)
+
+USE_BASE_ITER :: #config(USE_BASE_ITER, false)
 
 import ee "../expression_evaluator"
-import fa "../fixed_dynamic_array"
-import fa_iter "../fixed_dynamic_array/iter"
+import fda "../fixed_dynamic_array"
+import fda_iter "../fixed_dynamic_array/iter"
 
-import ba "../base_iter"
+import ba "../iter"
 
 import "core:fmt"
 import "core:log"
@@ -30,6 +33,62 @@ info :: proc(fmt_str: string, args: ..any, location := #caller_location) {
 	context.temp_allocator = log_alloc
 
 	log.infof(fmt_str, ..args, location = location)
+}
+
+when RUN_ITER_DEMO {
+	CountingState :: struct {
+		using base:     ba.BaseState,
+		count:          int,
+		original_count: int,
+	}
+	CountingIterator :: ba.Iterator(CountingState, int)
+
+	make_counting_iter :: proc(count: int) -> ba.OpaqueIterator(int) {
+		return ba.make_iterator(CountingIterator {
+			index = ba.index,
+			update = proc "contextless" (state: ^CountingState) {
+				state.index += 1
+			},
+			get_item = proc "contextless" (state: ^CountingState) -> int {
+				return state.index
+			},
+			valid = proc "contextless" (state: ^CountingState) -> bool {
+				return state.index < state.count
+			},
+			is_dead = proc "contextless" (state: ^CountingState) -> bool {
+				return state.count < 0
+			},
+			died = proc "contextless" (state: ^CountingState) {
+				state.count = -1
+			},
+			can_reset = proc "contextless" (state: ^CountingState) -> bool {
+				return true
+			},
+			reset = proc "contextless" (state: ^CountingState) {
+				state.index = -1
+				state.count = state.original_count
+			},
+			state = {{-1}, count, count},
+		})
+	}
+
+	showcase_base_iter :: proc() {
+		// create a counting iterator
+		it := make_counting_iter(5)
+
+		// iterate over the first 5 numbers
+		for i in ba.next(&it) {
+			info("Counting: %v", i)
+		}
+
+		// reset the iterator to start from 0 again
+		ba.reset(&it)
+
+		// iterate over the first 5 numbers again
+		for i in ba.next(&it) {
+			info("Counting: %v", i)
+		}
+	}
 }
 
 when RUN_EE_DEMO {
@@ -65,8 +124,8 @@ when RUN_EE_DEMO {
 when RUN_FDA_DEMO {
 	ITEM_COUNT :: #config(ITEM_COUNT, 100)
 	showcase_fixed_dynamic_array :: proc() {
-		array := fa.create(int, ITEM_COUNT)
-		defer fa.destroy(&array)
+		array := fda.create(int, ITEM_COUNT)
+		defer fda.destroy(&array)
 
 		old_context := context
 		defer context = old_context
@@ -75,32 +134,33 @@ when RUN_FDA_DEMO {
 		context.temp_allocator = mem.panic_allocator()
 
 		// append first element
-		fa.append(&array, 0)
+		fda.append(&array, 0)
 
 		// get the pointer the first element
-		ptr := fa.get_ptr(&array, 0)
+		ptr := fda.get_ptr(&array, 0)
 
 		for i in 1 ..< ITEM_COUNT {
-			// look ma, no allocations!
-			fa.append(&array, i)
-
 			if i % 20 == 0 {
-				info("Current Array Length: %v", fa.len(array))
+				info("Current Array Length: %v", fda.len(array))
 			}
+
+			// look ma, no allocations!
+			fda.append(&array, i)
+
 		}
-		info("Full Array Length: %v", fa.len(array))
+		info("Full Array Length: %v", fda.len(array))
 
 		// get the pointer the first element again
-		ptr2 := fa.get_ptr(&array, 0)
+		ptr2 := fda.get_ptr(&array, 0)
 
 		// no allocation or moving of memory happened
 		// so the pointer should be the same
 		assert(ptr == ptr2, "Pointers should be the same!")
 
 		i := 0
-		it := fa_iter.make_sync_iter(&array)
-		for item in fa_iter.next(&it) {
-			info("Item: %v", item)
+		it := fda_iter.make_sync_iter(&array)
+		for item, index in fda_iter.next(&it) {
+			info("Index: %v, Value: %v", index, item)
 
 			// remove every third item
 			if i % 3 == 0 {
@@ -109,7 +169,7 @@ when RUN_FDA_DEMO {
 				// this is completely safe, because the iterator synchronizes
 				// the expected length of the array with the actual length before iterating
 				// which makes it safe to remove the current and any later item while iterating
-				fa_iter.ordered_remove_current(&it)
+				fda_iter.unordered_remove_current(&it)
 			}
 
 			// technically every function, except resize, is safe to call while iterating
@@ -119,23 +179,32 @@ when RUN_FDA_DEMO {
 			// will also make sure that you wont iterate over an element twice or miss an element
 			i += 1
 		}
-		info("Final Array Length: %v", fa.len(array))
+		info("Array Length: %v", fda.len(array))
 
-		fa.clear(&array)
+		fda.clear(&array)
 		for i in 0 ..< ITEM_COUNT {
-			fa.append(&array, i)
+			fda.append(&array, i)
 		}
 
 		i = 0
-		for item in fa_iter.next(&it) {
-			if i % 3 == 0 {
-				fa_iter.unordered_remove_current(&it)
-			} else if i % 5 == 0 {
-				fa_iter.append(&it, i)
+		for item in fda_iter.next(&it) {
+			fda_iter.unordered_remove_current(&it)
+			fda_iter.push_back(&it, i)
+			fda_iter.pop_back_safe(&it)
+			fda_iter.ordered_remove(&it, i)
+			fda_iter.unordered_remove(&it, i)
+			when USE_BASE_ITER {
+				state := ba.state(&it, fda_iter.FixedDynamicArraySynchronizedIteratorState(int))
+				fda_iter.ordered_remove(&it, fda.get_ptr(state.array, 0))
+				fda_iter.unordered_remove(&it, fda.get_ptr(state.array, 0))
+			} else {
+				fda_iter.ordered_remove(&it, fda.get_ptr(it.array, 0))
+				fda_iter.unordered_remove(&it, fda.get_ptr(it.array, 0))
 			}
-			i += 1
+			break
 		}
-		info("Final Array Length: %v", fa.len(array))
+
+		info("Array Length: %v", fda.len(array))
 	}
 }
 
@@ -169,20 +238,15 @@ main :: proc() {
 	context.logger = log.create_console_logger(allocator = log_alloc)
 
 	when RUN_FDA_DEMO {
-		// showcase_fixed_dynamic_array()
+		showcase_fixed_dynamic_array()
 	}
 	when RUN_EE_DEMO {
-		// showcase_expression_evaluator()
+		showcase_expression_evaluator()
 	}
 
-	a := make([dynamic]int)
-	defer delete(a)
-	it := ba.make_counting_iter(100)
-	for i in ba.next(&it) {
-		info("Counting: %v", i)
-		append(&a, i)
+	when RUN_ITER_DEMO {
+		showcase_base_iter()
 	}
-	info("Final Array Length: %v", len(a))
 
 	free_all(log_alloc)
 }

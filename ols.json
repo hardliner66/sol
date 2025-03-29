@@ -2,6 +2,10 @@
     "$schema": "https://raw.githubusercontent.com/DanielGavin/ols/master/misc/ols.schema.json",
     "collections": [
         {
+            "name": "iter",
+            "path": "iter"
+        },
+        {
             "name": "expression_evaluator",
             "path": "expression_evaluator"
         },

@@ -15,7 +15,6 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/tests.exe",
             "cwd": "${workspaceFolder}",
-            "preLaunchTask": "Build Tests",
         }
     ]
 }
