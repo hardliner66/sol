@@ -2,42 +2,9 @@ package fixed_dynamic_array
 
 import "base:builtin"
 import "base:runtime"
+import "core:mem"
+
 _ :: runtime
-
-FixedDynamicArraySynchronizedIterator :: struct($T: typeid) {
-	array:        ^FixedDynamicArray(T),
-	index:        int,
-	expected_len: int,
-}
-
-@(private = "file")
-sync_or_increment :: proc "contextless" (it: ^$A/FixedDynamicArraySynchronizedIterator($T)) {
-	// Check if the array has been modified since the last iteration.
-	if it.expected_len == it.array.len {
-		// The array has not been modified.
-		// increment the index and return the next element.
-		it.index += 1
-	} else {
-		// The array has been modified.
-		// update the expected length and don't update the index.
-		it.expected_len = it.array.len
-	}
-}
-
-next :: proc "contextless" (it: ^$A/FixedDynamicArraySynchronizedIterator($T)) -> (^T, bool) {
-	sync_or_increment(it)
-
-	if it.index < it.array.len {
-		return &it.array.data[it.index], true
-	}
-	return nil, false
-}
-
-sync_iter :: proc "contextless" (
-	a: ^$A/FixedDynamicArray($T),
-) -> FixedDynamicArraySynchronizedIterator(T) {
-	return {a, -1, len(a^)}
-}
 
 FixedDynamicArray :: struct($T: typeid) {
 	data: []T,
@@ -149,12 +116,7 @@ pop_front_safe :: proc "contextless" (a: ^$A/FixedDynamicArray($T)) -> (item: T,
 	return
 }
 
-consume :: proc "odin" (a: ^$A/FixedDynamicArray($T), count: int, loc := #caller_location) {
-	assert(condition = a.len >= count, loc = loc)
-	a.len -= count
-}
-
-ordered_remove :: proc "contextless" (
+ordered_remove_index :: proc "contextless" (
 	a: ^$A/FixedDynamicArray($T),
 	index: int,
 	loc := #caller_location,
@@ -164,6 +126,14 @@ ordered_remove :: proc "contextless" (
 		copy(a.data[index:], a.data[index + 1:])
 	}
 	a.len -= 1
+}
+
+ordered_remove_ptr :: proc "contextless" (
+	a: ^$A/FixedDynamicArray($T),
+	ptr: ^T,
+	loc := #caller_location,
+) #no_bounds_check {
+	ordered_remove_index(a, index_from_ptr(a, ptr), loc)
 }
 
 unordered_remove_index :: proc "contextless" (
@@ -185,12 +155,7 @@ unordered_remove_ptr :: proc "contextless" (
 	ptr: ^T,
 	loc := #caller_location,
 ) #no_bounds_check {
-	n := a.len - 1
-	if ptr != &a.data[n] {
-		ptr^ = a.data[n]
-	}
-	a.len -= 1
-	a.len = max(a.len, 0)
+	unordered_remove_index(a, index_from_ptr(a, ptr), loc)
 }
 
 clear :: proc "contextless" (a: ^$A/FixedDynamicArray($T)) {
@@ -238,6 +203,11 @@ resize :: proc(a: ^$A/FixedDynamicArray($T), new_len: int) {
 	a.data = new_array
 }
 
+@(private)
+index_from_ptr :: proc "contextless" (a: ^$A/FixedDynamicArray($T), ptr: ^T) -> int {
+	return mem.ptr_sub(ptr, &a.data[0])
+}
+
 append_elem :: push_back
 append_elems :: push_back_elems
 push :: proc {
@@ -251,4 +221,8 @@ append :: proc {
 unordered_remove :: proc {
 	unordered_remove_index,
 	unordered_remove_ptr,
+}
+ordered_remove :: proc {
+	ordered_remove_index,
+	ordered_remove_ptr,
 }

@@ -8,6 +8,14 @@
             "program": "${workspaceFolder}/build/sol_demo.exe",
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "Build Demo Debug",
+        },
+        {
+            "name": "Debug Tests",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/tests.exe",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "Build Tests",
         }
     ]
 }

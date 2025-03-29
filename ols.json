@@ -1,5 +1,15 @@
 {
     "$schema": "https://raw.githubusercontent.com/DanielGavin/ols/master/misc/ols.schema.json",
+    "collections": [
+        {
+            "name": "expression_evaluator",
+            "path": "expression_evaluator"
+        },
+        {
+            "name": "fixed_dynamic_array",
+            "path": "fixed_dynamic_array"
+        }
+    ],
     "enable_document_symbols": true,
     "enable_hover": true,
     "enable_snippets": true

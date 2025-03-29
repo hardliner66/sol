@@ -31,6 +31,36 @@
             ]
         },
         {
+            "label": "Build Tests",
+            "type": "shell",
+            "command": "odin",
+            "args": [
+                "build",
+                "${workspaceFolder}/tests",
+                "-out:build/tests.exe",
+                "-build-mode:test",
+                "-debug",
+            ],
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": true
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "dependsOn": [
+                "Create Build Directory"
+            ],
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
             "label": "Create Build Directory",
             "type": "shell",
             "command": "if (-Not (Test-Path './build')) { New-Item -ItemType Directory -Path './build' }",
