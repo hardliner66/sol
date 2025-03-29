@@ -1,5 +1,3 @@
-#+feature dynamic-literals
-
 package expression_evaluator
 
 import "core:math"
@@ -12,12 +10,19 @@ NAN :: math.INF_F32 + math.NEG_INF_F32
 
 Operator :: rune
 
-make_default_precedence_map :: proc() -> map[Operator]int {
-	return map[Operator]int{'+' = 1, '-' = 1, '*' = 2, '/' = 2}
-}
+PrecedenceMap :: map[Operator]int
+OpProcMap :: map[rune]OpProc
 
-@(private)
-DefaultPrecedenceMap := make_default_precedence_map()
+VariableMap :: map[Identifier]Number
+
+make_default_precedence_map :: proc() -> PrecedenceMap {
+	result := make(PrecedenceMap)
+	result['+'] = 1
+	result['-'] = 1
+	result['*'] = 2
+	result['/'] = 2
+	return result
+}
 
 VariableNotFound :: struct {
 	name: string,
@@ -72,22 +77,22 @@ Error :: union #shared_nil {
 
 OpProc :: proc(a: f32, b: f32) -> EvalResult
 
-make_default_op_proc_map :: proc() -> map[Operator]OpProc {
-	return {
-		'+' = proc(a: f32, b: f32) -> EvalResult {return a + b},
-		'-' = proc(a: f32, b: f32) -> EvalResult {return a - b},
-		'*' = proc(a: f32, b: f32) -> EvalResult {return a * b},
-		'/' = proc(a: f32, b: f32) -> EvalResult {
-			if b == 0.0 {
-				if DIVISION_BY_ZERO_RETURNS_ZERO {
-					return f32(0.0)
-				} else {
-					return EvalError(OperatorError{'/', "Division by zero"})
-				}
+make_default_op_proc_map :: proc() -> OpProcMap {
+	result := make(OpProcMap)
+	result['+'] = proc(a: f32, b: f32) -> EvalResult {return a + b}
+	result['-'] = proc(a: f32, b: f32) -> EvalResult {return a - b}
+	result['*'] = proc(a: f32, b: f32) -> EvalResult {return a * b}
+	result['/'] = proc(a: f32, b: f32) -> EvalResult {
+		if b == 0.0 {
+			if DIVISION_BY_ZERO_RETURNS_ZERO {
+				return f32(0.0)
+			} else {
+				return EvalError(OperatorError{'/', "Division by zero"})
 			}
-			return a / b
-		},
+		}
+		return a / b
 	}
+	return result
 }
 
 @(private)
@@ -398,11 +403,12 @@ count_tokens :: proc(input: string) -> int {
 @(require_results)
 parse :: proc(
 	input: string,
-	precedence_map := DefaultPrecedenceMap,
+	precedence_map: Maybe(PrecedenceMap),
 ) -> (
 	eb: ExpressionBlock,
 	err: Error,
 ) {
+	precedence_map := precedence_map.? or_else make_default_precedence_map()
 	token_count := count_tokens(input)
 	tokens: []Token = make([]Token, token_count)
 	defer delete(tokens)
@@ -451,8 +457,8 @@ value_to_float :: proc(n: Number) -> f32 {
 internal_eval_expr :: proc(
 	expr: Expr,
 	eb: ExpressionBlock,
-	variables: map[Identifier]Number,
-	operators: map[Operator]OpProc,
+	variables: VariableMap,
+	operators: OpProcMap,
 ) -> (
 	result: f32,
 	err: EvalError,
@@ -490,21 +496,25 @@ internal_eval_expr :: proc(
 @(require_results)
 eval_expr :: proc(
 	eb: ExpressionBlock,
-	variables: map[Identifier]Number = {},
-	operators := DefaultOpProcMap,
+	variables: Maybe(VariableMap),
+	operators: Maybe(OpProcMap),
 ) -> (
 	result: f32,
 	err: Error,
 ) #no_bounds_check {
-	return internal_eval_expr(eb.expressions[eb.start], eb, variables, operators)
+	var := variables.? or_else make(VariableMap)
+	defer if variables == nil do delete(var)
+	op := operators.? or_else make(OpProcMap)
+	defer if operators == nil do delete(op)
+	return internal_eval_expr(eb.expressions[eb.start], eb, var, op)
 }
 
 @(require_results)
 eval :: proc(
 	text: string,
-	variables: map[Identifier]Number = {},
-	operators := DefaultOpProcMap,
-	precedence_map := DefaultPrecedenceMap,
+	variables: Maybe(VariableMap),
+	operators: Maybe(OpProcMap),
+	precedence_map: Maybe(PrecedenceMap),
 ) -> (
 	f: f32,
 	err: Error,

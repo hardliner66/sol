@@ -1,5 +1,15 @@
 {
     "$schema": "https://raw.githubusercontent.com/DanielGavin/ols/master/misc/ols.schema.json",
+    "profile": "default",
+    "profiles": [
+        {
+            "name": "default",
+            "exclude_path": [],
+            "checker_path": [
+                "demo"
+            ]
+        }
+    ],
     "collections": [
         {
             "name": "iter",
@@ -12,6 +22,10 @@
         {
             "name": "fixed_dynamic_array",
             "path": "fixed_dynamic_array"
+        },
+        {
+            "name": "opaque",
+            "path": "opaque"
         }
     ],
     "enable_document_symbols": true,

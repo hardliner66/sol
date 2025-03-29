@@ -1,5 +1,7 @@
 package iter_base
 
+import op "../opaque"
+
 import "core:mem"
 
 MAX_ITERATOR_SIZE :: #config(MAX_ITERATOR_SIZE, 256)
@@ -21,7 +23,7 @@ OpaqueIterator :: struct($T: typeid) {
 	died:      proc "contextless" (state: ^OpaqueIterator(T)),
 	can_reset: proc "contextless" (state: ^OpaqueIterator(T)) -> bool,
 	reset:     proc "contextless" (state: ^OpaqueIterator(T)),
-	iter:      [MAX_ITERATOR_SIZE]byte,
+	iter:      op.Opaque(MAX_ITERATOR_SIZE),
 }
 
 IteratorInterface :: struct($State: typeid, $T: typeid) {
@@ -41,64 +43,55 @@ Iterator :: struct($State: typeid, $T: typeid) {
 }
 
 state :: proc "contextless" (it: ^OpaqueIterator($T), $S: typeid) -> ^S {
-	it := transmute(^Iterator(S, T))&it.iter
+	it := op.get_ptr(it.iter, Iterator(S, T))
 	return &it.state
 }
 
 from_untyped :: proc(opaque: OpaqueIterator($T), $S: typeid) -> Iterator(S, T) {
-	opaque := opaque
-	it: Iterator(S, T)
-	size := size_of(Iterator(S, T))
-	tmp := opaque.iter[0:size]
-	mem.copy(&it, &tmp, size)
-	return it
+	return op.get_value(it.iter, Iterator(S, T))
 }
 
 make_iterator :: proc(it: $I/Iterator($S, $T)) -> OpaqueIterator(T) {
 	return erase_type(validate_iterator(it))
 }
 
-
 erase_type :: proc(it: $I/Iterator($S, $T)) -> OpaqueIterator(T) {
 	opaque := OpaqueIterator(T) {
 		index = proc "contextless" (it: ^OpaqueIterator(T)) -> int {
-			it_ := transmute(^I)&it.iter
-			return it_.index(&it_.state)
+			it := op.get_ptr(&it.iter, I)
+			return it.index(&it.state)
 		},
 		is_dead = proc "contextless" (it: ^OpaqueIterator(T)) -> bool {
-			it_ := transmute(^I)&it.iter
-			return it_.is_dead(&it_.state)
+			it := op.get_ptr(&it.iter, I)
+			return it.is_dead(&it.state)
 		},
 		update = proc "contextless" (it: ^OpaqueIterator(T)) {
-			it_ := transmute(^I)&it.iter
-			it_.update(&it_.state)
+			it := op.get_ptr(&it.iter, I)
+			it.update(&it.state)
 		},
 		valid = proc "contextless" (it: ^OpaqueIterator(T)) -> bool {
-			it_ := transmute(^I)&it.iter
-			return it_.valid(&it_.state)
+			it := op.get_ptr(&it.iter, I)
+			return it.valid(&it.state)
 		},
 		get_item = proc "contextless" (it: ^OpaqueIterator(T)) -> T {
-			it_ := transmute(^I)&it.iter
-			return it_.get_item(&it_.state)
+			it := op.get_ptr(&it.iter, I)
+			return it.get_item(&it.state)
 		},
 		died = proc "contextless" (it: ^OpaqueIterator(T)) {
-			it_ := transmute(^I)&it.iter
-			it_.died(&it_.state)
+			it := op.get_ptr(&it.iter, I)
+			it.died(&it.state)
 		},
 		can_reset = proc "contextless" (it: ^OpaqueIterator(T)) -> bool {
-			it_ := transmute(^I)&it.iter
-			return it_.can_reset(&it_.state)
+			it := op.get_ptr(&it.iter, I)
+			return it.can_reset(&it.state)
 		},
 		reset = proc "contextless" (it: ^OpaqueIterator(T)) {
-			it_ := transmute(^I)&it.iter
-			it_.reset(&it_.state)
+			it := op.get_ptr(&it.iter, I)
+			it.reset(&it.state)
 		},
 	}
 
-	it := it
-	size := size_of(Iterator(S, T))
-	assert(size <= MAX_ITERATOR_SIZE, "size of iterator exceeds inline size")
-	mem.copy(&opaque.iter, &it, size)
+	opaque.iter = op.make_opaque_sized(it, MAX_ITERATOR_SIZE)
 
 	return opaque
 }

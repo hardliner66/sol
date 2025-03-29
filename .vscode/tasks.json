@@ -50,8 +50,8 @@
                 "clear": true
             },
             "group": {
-                "kind": "build",
-                "isDefault": true
+                "kind": "test",
+                "isDefault": false
             },
             "dependsOn": [
                 "Create Build Directory"

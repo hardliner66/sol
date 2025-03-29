@@ -6,5 +6,6 @@
         "infof",
         "punct",
         "strconv"
-    ]
+    ],
+    "sarif-viewer.connectToGithubCodeScanning": "off"
 }
