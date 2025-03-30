@@ -1,0 +1,25 @@
+name: Run Tests
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  run_tests:
+    name: Run Tests
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Odin
+        uses: laytan/setup-odin@v2
+        with:
+          release: false
+
+      - name: Run test.bat
+        run: |
+          ./test.bat
