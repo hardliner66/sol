@@ -10,8 +10,8 @@ FixedDynamicArray :: struct($T: typeid) {
 	len:  int,
 }
 
-create :: proc($T: typeid, capacity: int) -> FixedDynamicArray(T) {
-	return {make([]T, capacity), 0}
+create :: proc($T: typeid, capacity: int, allocator := context.allocator) -> FixedDynamicArray(T) {
+	return {make([]T, capacity, allocator = allocator), 0}
 }
 
 destroy :: proc(arr: ^FixedDynamicArray($T)) {
@@ -184,22 +184,6 @@ inject_at :: proc "contextless" (
 		return true
 	}
 	return false
-}
-
-resize :: proc(a: ^$A/FixedDynamicArray($T), new_len: int) {
-	new_array := make([]T, new_len)
-	if new_len < a.len {
-		// shrink
-		a.len = new_len
-		// copy subset of data
-		copy(new_array, a.data[:new_len])
-	} else {
-		// copy all data
-		copy(new_array, a.data[:a.len])
-		// len stays the same
-	}
-	delete(a.data)
-	a.data = new_array
 }
 
 @(private)

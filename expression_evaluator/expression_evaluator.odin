@@ -15,8 +15,8 @@ OperatorMap :: map[rune]OperatorFunction
 
 VariableMap :: map[Identifier]Number
 
-make_default_precedence_map :: proc() -> PrecedenceMap {
-	result := make(PrecedenceMap)
+make_default_precedence_map :: proc(allocator := context.allocator) -> PrecedenceMap {
+	result := make(PrecedenceMap, allocator = allocator)
 	result['+'] = 1
 	result['-'] = 1
 	result['*'] = 2
@@ -77,8 +77,8 @@ Error :: union #shared_nil {
 
 OperatorFunction :: proc(a: f32, b: f32) -> EvalResult
 
-make_default_operator_map :: proc() -> OperatorMap {
-	result := make(OperatorMap)
+make_default_operator_map :: proc(allocator := context.allocator) -> OperatorMap {
+	result := make(OperatorMap, allocator = allocator)
 	result['+'] = proc(a: f32, b: f32) -> EvalResult {return a + b}
 	result['-'] = proc(a: f32, b: f32) -> EvalResult {return a - b}
 	result['*'] = proc(a: f32, b: f32) -> EvalResult {return a * b}
@@ -400,7 +400,8 @@ count_tokens :: proc(input: string) -> int {
 @(require_results)
 parse :: proc(
 	input: string,
-	precedence_map: Maybe(PrecedenceMap) = {},
+	precedence_map: Maybe(PrecedenceMap) = nil,
+	allocator := context.allocator,
 ) -> (
 	eb: ExpressionBlock,
 	err: Error,
@@ -408,11 +409,11 @@ parse :: proc(
 	pm := precedence_map.? or_else make_default_precedence_map()
 	defer if precedence_map == nil do delete(pm)
 	token_count := count_tokens(input)
-	tokens: []Token = make([]Token, token_count)
+	tokens: []Token = make([]Token, token_count, allocator = allocator)
 	defer delete(tokens)
 	lex(input, tokens) or_return
 
-	eb = {0, 0, make([]Expr, len(tokens))}
+	eb = {0, 0, make([]Expr, len(tokens), allocator = allocator)}
 	defer if err != nil do destroy_expr(eb)
 
 	parser := Parser {
@@ -500,8 +501,9 @@ internal_eval_expr :: proc(
 @(require_results)
 eval_expr :: proc(
 	eb: ExpressionBlock,
-	variables: Maybe(VariableMap) = {},
-	operators: Maybe(OperatorMap) = {},
+	variables: Maybe(VariableMap) = nil,
+	operators: Maybe(OperatorMap) = nil,
+	allocator := context.allocator,
 ) -> (
 	result: f32,
 	err: Error,
@@ -514,15 +516,16 @@ eval_expr :: proc(
 @(require_results)
 eval :: proc(
 	text: string,
-	variables: Maybe(VariableMap) = {},
-	operators: Maybe(OperatorMap) = {},
-	precedence_map: Maybe(PrecedenceMap) = {},
+	variables: Maybe(VariableMap) = nil,
+	operators: Maybe(OperatorMap) = nil,
+	precedence_map: Maybe(PrecedenceMap) = nil,
+	allocator := context.allocator,
 ) -> (
 	f: f32,
 	err: Error,
 ) {
-	expr := parse(text, precedence_map) or_return
+	expr := parse(text, precedence_map, allocator = allocator) or_return
 	defer destroy_expr(expr)
 
-	return eval_expr(expr, variables, operators)
+	return eval_expr(expr, variables, operators, allocator = allocator)
 }
