@@ -10,6 +10,7 @@
                 "${workspaceFolder}/demo",
                 "-vet",
                 "-out:build/sol_demo.exe",
+                "-error-pos-style:unix",
                 "-debug",
             ],
             "presentation": {
@@ -39,6 +40,7 @@
                 "test",
                 "${workspaceFolder}/tests",
                 "-out:build/tests.exe",
+                "-error-pos-style:unix",
                 "-all-packages",
                 "-vet",
                 "-debug",

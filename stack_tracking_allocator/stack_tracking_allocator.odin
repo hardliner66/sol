@@ -12,6 +12,12 @@ import "core:strings"
 import "core:sync"
 import win32 "core:sys/windows"
 
+STA_ODIN_ROOT_MARKER :: #config(
+	STA_ODIN_ROOT_MARKER,
+	"(ODIN_ROOT)/" when path.SEPARATOR == '/' else "(ODIN_ROOT)\\",
+)
+STA_FILTER_STDLIB :: #config(STA_FILTER_STDLIB, true)
+
 Context :: trace.Context
 init :: trace.init
 destroy :: trace.destroy
@@ -244,24 +250,19 @@ print_stack_trace :: proc(data: ^Stack_Tracking_Allocator, stack_trace: Stack_Tr
 	defer context.allocator = old_alloc
 
 	runtime.print_byte('|')
-	runtime.print_string(strings.repeat("=", 78))
+	runtime.print_string(strings.repeat("=", 82))
 	runtime.print_string("|\n")
 	runtime.print_string("|.")
-	runtime.print_string(strings.center_justify(" Stack Trace ", 76, "="))
+	runtime.print_string(strings.center_justify(" Stack Trace ", 80, "="))
 	runtime.print_string(".|\n")
 	runtime.print_string("|..")
-	runtime.print_string(strings.repeat("=", 74))
+	runtime.print_string(strings.repeat("=", 78))
 	runtime.print_string("..|\n")
 
 	for fl, i in stack_trace {
 		file_path := fl.file_path
 		if strings.starts_with(file_path, ODIN_ROOT) {
-			file_path, _ = strings.replace(
-				file_path,
-				ODIN_ROOT,
-				"(ODIN_ROOT)/" when path.SEPARATOR == '/' else "(ODIN_ROOT)\\",
-				1,
-			)
+			file_path, _ = strings.replace(file_path, ODIN_ROOT, STA_ODIN_ROOT_MARKER, 1)
 		}
 
 		procedure := fl.procedure
@@ -272,8 +273,9 @@ print_stack_trace :: proc(data: ^Stack_Tracking_Allocator, stack_trace: Stack_Tr
 
 		procedure = fmt.aprintf("%s() ", procedure)
 
-		runtime.print_string(strings.left_justify(fmt.aprintf("| #%d", i), 3, " "))
-		if !strings.starts_with(file_path, "(ODIN_ROOT)") {
+		runtime.print_string("| #")
+		runtime.print_string(strings.left_justify(fmt.aprintf("%d", i), 3, " "))
+		if !strings.starts_with(file_path, STA_ODIN_ROOT_MARKER) {
 			err: path.Relative_Error
 			file_path, err = path.rel(os.get_current_directory(), file_path)
 			if err != nil {
@@ -288,7 +290,7 @@ print_stack_trace :: proc(data: ^Stack_Tracking_Allocator, stack_trace: Stack_Tr
 		runtime.print_string("\n|---- ")
 		if path.is_abs(file_path) ||
 		   strings.starts_with(file_path, ".") ||
-		   strings.starts_with(file_path, "(ODIN_ROOT)") {
+		   strings.starts_with(file_path, STA_ODIN_ROOT_MARKER) {
 			runtime.print_string(file_path)
 		} else {
 			runtime.print_byte('.')
@@ -317,7 +319,12 @@ get_trace :: proc(data: ^Stack_Tracking_Allocator) -> []Stack_Frame {
 		frames := trace.frames(ctx, 1, buf[:])
 		for f in frames {
 			fl := resolve(ctx, f)
-			if fl.loc.file_path == "" || fl.loc.line == 0 || fl.loc.procedure == "__scrt_common_main_seh" {
+			is_stdlib_function := strings.starts_with(fl.loc.file_path, ODIN_ROOT)
+			is_startup := fl.loc.procedure == "__scrt_common_main_seh"
+			if fl.loc.file_path == "" ||
+			   fl.loc.line == 0 ||
+			   is_startup ||
+			   is_stdlib_function when STA_FILTER_STDLIB else false {
 				continue
 			}
 			append(&frame_list, fl)
