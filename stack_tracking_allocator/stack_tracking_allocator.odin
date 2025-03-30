@@ -244,20 +244,24 @@ resolve :: proc(
 	return
 }
 
-print_stack_trace :: proc(data: ^Stack_Tracking_Allocator, stack_trace: Stack_Trace) {
+format_stack_trace :: proc(data: ^Stack_Tracking_Allocator, stack_trace: Stack_Trace) -> string {
 	old_alloc := context.allocator
 	context.allocator = data.internal_alloc
 	defer context.allocator = old_alloc
 
-	runtime.print_byte('|')
-	runtime.print_string(strings.repeat("=", 82))
-	runtime.print_string("|\n")
-	runtime.print_string("|.")
-	runtime.print_string(strings.center_justify(" Stack Trace ", 80, "="))
-	runtime.print_string(".|\n")
-	runtime.print_string("|..")
-	runtime.print_string(strings.repeat("=", 78))
-	runtime.print_string("..|\n")
+	sb: strings.Builder
+	strings.builder_init_none(&sb)
+	defer strings.builder_destroy(&sb)
+
+	strings.write_byte(&sb, '|')
+	strings.write_string(&sb, strings.repeat("=", 82))
+	strings.write_string(&sb, "|\n")
+	strings.write_string(&sb, "|.")
+	strings.write_string(&sb, strings.center_justify(" Stack Trace ", 80, "="))
+	strings.write_string(&sb, ".|\n")
+	strings.write_string(&sb, "|..")
+	strings.write_string(&sb, strings.repeat("=", 78))
+	strings.write_string(&sb, "..|\n")
 
 	for fl, i in stack_trace {
 		file_path := fl.file_path
@@ -273,8 +277,8 @@ print_stack_trace :: proc(data: ^Stack_Tracking_Allocator, stack_trace: Stack_Tr
 
 		procedure = fmt.aprintf("%s() ", procedure)
 
-		runtime.print_string("| #")
-		runtime.print_string(strings.left_justify(fmt.aprintf("%d", i), 3, " "))
+		strings.write_string(&sb, "| #")
+		strings.write_string(&sb, strings.left_justify(fmt.aprintf("%d", i), 3, " "))
 		if !strings.starts_with(file_path, STA_ODIN_ROOT_MARKER) {
 			err: path.Relative_Error
 			file_path, err = path.rel(os.get_current_directory(), file_path)
@@ -283,28 +287,39 @@ print_stack_trace :: proc(data: ^Stack_Tracking_Allocator, stack_trace: Stack_Tr
 			}
 		}
 
-		runtime.print_string(" [")
-		runtime.print_string(fl.frame)
-		runtime.print_string("] ")
-		runtime.print_string(procedure)
-		runtime.print_string("\n|---- ")
+		strings.write_string(&sb, " [")
+		strings.write_string(&sb, fl.frame)
+		strings.write_string(&sb, "] ")
+		strings.write_string(&sb, procedure)
+		strings.write_string(&sb, "\n|---- ")
 		if path.is_abs(file_path) ||
 		   strings.starts_with(file_path, ".") ||
 		   strings.starts_with(file_path, STA_ODIN_ROOT_MARKER) {
-			runtime.print_string(file_path)
+			strings.write_string(&sb, file_path)
 		} else {
-			runtime.print_byte('.')
-			runtime.print_byte(path.SEPARATOR)
-			runtime.print_string(file_path)
+			strings.write_byte(&sb, '.')
+			strings.write_byte(&sb, path.SEPARATOR)
+			strings.write_string(&sb, file_path)
 		}
-		runtime.print_byte(':')
-		runtime.print_u64(u64(fl.line))
+		strings.write_byte(&sb, ':')
+		strings.write_u64(&sb, u64(fl.line))
 		if fl.column != 0 {
-			runtime.print_byte(':')
-			runtime.print_u64(u64(fl.column))
+			strings.write_byte(&sb, ':')
+			strings.write_u64(&sb, u64(fl.column))
 		}
-		runtime.print_string("\n")
+		strings.write_string(&sb, "\n")
 	}
+
+	return strings.to_string(sb)
+}
+
+print_stack_trace :: proc(data: ^Stack_Tracking_Allocator, stack_trace: Stack_Trace) {
+	old_alloc := context.allocator
+	context.allocator = data.internal_alloc
+	defer context.allocator = old_alloc
+
+	text := format_stack_trace(data, stack_trace)
+	runtime.print_string(text)
 }
 
 get_trace :: proc(data: ^Stack_Tracking_Allocator) -> []Stack_Frame {
