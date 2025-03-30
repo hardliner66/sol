@@ -7,5 +7,6 @@
         "punct",
         "strconv"
     ],
+    "markdown.extension.toc.levels": "2..6",
     "sarif-viewer.connectToGithubCodeScanning": "off"
 }

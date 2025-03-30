@@ -3,6 +3,12 @@
 This is a small collection of code I wrote, that I think might
 be useful for others as well.
 
+- [Opaque](#opaque)
+- [Iter](#iter)
+- [Fixed Dynamic Array](#fixed-dynamic-array)
+  - [Fixed Dynamic Array / Iter](#fixed-dynamic-array--iter)
+- [Expression Evaluator](#expression-evaluator)
+
 ## Opaque
 Adds an opaque value type by basically reinterpreting a datatype as
 an array of bytes and storing that (+ type info). This can be used
@@ -17,9 +23,8 @@ without knowing exactly how it works underneath.
 
 **WARNING: This code transmutes. Use at your own risk.**
 
-I _think_ everything should work fine, but until I'm sure I'm providing
-a compiler switch to change the iterator from concrete to an opaque one
-for the following data types (if they have an iterator).
+I _think_ everything should work fine, but if you're unsure,
+you probably want to avoid stuff related to iter and opaque.
 
 ## Fixed Dynamic Array
 The name might seem like it contradicts itself,
@@ -33,7 +38,7 @@ combined with the interface of a dynamic array.
 
 _So append away and don't worry about keeping track where to put the next element!_
 
-### Iter
+### Fixed Dynamic Array / Iter
 It's iter time again. The `fixed_dynamic_array` library has a subfolder containing
 the code for an iterator and code to safely manipulate the underlying container,
 even while iterating.
