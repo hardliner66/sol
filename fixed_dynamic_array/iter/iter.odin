@@ -3,7 +3,6 @@ package fixed_dynamic_array_synchronized_iterator
 import fda ".."
 import ba "../../iter"
 
-import "base:runtime"
 import "core:mem"
 
 FixedDynamicArraySynchronizedIteratorState :: struct($T: typeid) {

@@ -68,12 +68,12 @@ when RUN_FDA_DEMO {
 		info("Array Length: %v", fda.len(array))
 
 		fda.clear(&array)
-		for i in 0 ..< ITEM_COUNT {
-			fda.append(&array, i)
+		for j in 0 ..< ITEM_COUNT {
+			fda.append(&array, j)
 		}
 
 		i = 0
-		for item in fda_iter.next(&it) {
+		for _ in fda_iter.next(&it) {
 			fda_iter.unordered_remove_current(&it)
 			fda_iter.push_back(&it, i)
 			fda_iter.pop_back_safe(&it)

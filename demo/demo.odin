@@ -11,18 +11,17 @@ USE_BASE_ITER :: #config(USE_BASE_ITER, false)
 
 import "core:fmt"
 import "core:log"
-import "core:math"
 import "core:mem"
 
 showcase :: proc()
 
 run_showcase :: proc(sc: showcase, name: string, track: ^mem.Tracking_Allocator) {
-	log.info("=== %s Showcase ===", name)
+	log.infof("=== %s Showcase ===", name)
 	log.info()
 	old := len(track.allocation_map)
 	sc()
 	log.info()
-	log.info("=== Allocations: %v ===", len(track.allocation_map) - old)
+	log.infof("=== Allocations: %v ===", len(track.allocation_map) - old)
 	log.info()
 	log.info()
 }

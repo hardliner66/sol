@@ -8,6 +8,7 @@
             "args": [
                 "build",
                 "${workspaceFolder}/demo",
+                "-vet",
                 "-out:build/sol_demo.exe",
                 "-debug",
             ],
@@ -39,6 +40,7 @@
                 "${workspaceFolder}/tests",
                 "-out:build/tests.exe",
                 "-all-packages",
+                "-vet",
                 "-debug",
             ],
             "presentation": {

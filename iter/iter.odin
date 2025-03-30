@@ -1,8 +1,6 @@
 package iter_base
 
-import op "../opaque"
-
-import "core:mem"
+@(require) import op "../opaque"
 
 MAX_ITERATOR_SIZE :: #config(MAX_ITERATOR_SIZE, 256)
 

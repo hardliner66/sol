@@ -1,10 +1,9 @@
 package fixed_dynamic_array
 
 import "base:builtin"
-import "base:runtime"
-import "core:mem"
 
-_ :: runtime
+@(require) import "base:runtime"
+@(require) import "core:mem"
 
 FixedDynamicArray :: struct($T: typeid) {
 	data: []T,

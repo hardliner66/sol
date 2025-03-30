@@ -86,7 +86,6 @@ test_variables :: proc(t: ^testing.T) {
 
 @(test)
 test_error_handling :: proc(t: ^testing.T) {
-	result: f32
 	err: Error
 
 	when !DIVISION_BY_ZERO_RETURNS_ZERO {
