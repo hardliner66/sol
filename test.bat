@@ -1,6 +1,6 @@
 @echo off
 
-pushd "%~dp0\.."
+pushd "%~dp0"
 
 call odin test tests ^
     -out:build/tests.exe ^
