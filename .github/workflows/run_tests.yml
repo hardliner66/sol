@@ -7,8 +7,11 @@ on:
 
 jobs:
   run_tests:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     name: Run Tests
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -22,4 +25,4 @@ jobs:
 
       - name: Run test.bat
         run: |
-          ./test.bat
+          call odin test tests -all-packages -debug
