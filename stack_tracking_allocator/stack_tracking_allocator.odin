@@ -253,7 +253,7 @@ format_stack_trace :: proc(data: ^Stack_Tracking_Allocator, stack_trace: Stack_T
 	strings.builder_init_none(&sb)
 	defer strings.builder_destroy(&sb)
 
-	strings.write_byte(&sb, '|')
+	strings.write_string(&sb, "|")
 	strings.write_string(&sb, strings.repeat("=", 82))
 	strings.write_string(&sb, "|\n")
 	strings.write_string(&sb, "|.")
@@ -297,15 +297,13 @@ format_stack_trace :: proc(data: ^Stack_Tracking_Allocator, stack_trace: Stack_T
 		   strings.starts_with(file_path, STA_ODIN_ROOT_MARKER) {
 			strings.write_string(&sb, file_path)
 		} else {
-			strings.write_byte(&sb, '.')
-			strings.write_byte(&sb, path.SEPARATOR)
+			strings.write_string(&sb, ".")
+			strings.write_rune(&sb, path.SEPARATOR)
 			strings.write_string(&sb, file_path)
 		}
-		strings.write_byte(&sb, ':')
-		strings.write_u64(&sb, u64(fl.line))
+		strings.write_string(&sb, fmt.aprintf(":%d", u64(fl.line)))
 		if fl.column != 0 {
-			strings.write_byte(&sb, ':')
-			strings.write_u64(&sb, u64(fl.column))
+			strings.write_string(&sb, fmt.aprintf(":%d", u64(fl.column)))
 		}
 		strings.write_string(&sb, "\n")
 	}
