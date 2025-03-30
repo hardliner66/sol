@@ -20,6 +20,18 @@ make_opaque_ptr :: proc(ptr: ^$T) -> OpaquePtr {
 	return {data = rawptr(ptr), type = T}
 }
 
+from_opaque_ptr_safe :: proc(opaque: OpaquePtr, $T: typeid) -> (ptr: ^T, ok: bool) {
+	(opaque.type == T) or_return
+	return transmute(^T)(opaque.data), true
+}
+
+from_opaque_ptr :: proc(opaque: OpaquePtr, $T: typeid) -> ^T {
+	for value in from_opaque_ptr_safe(opaque, T) {
+		return value
+	}
+	panic_contextless("Type mismatch")
+}
+
 make_opaque_sized :: proc(value: $T, $S: int) -> (opaque: Opaque(S)) {
 	#assert(size_of(T) <= S, "Opaque size exceeds maximum size")
 	#assert(
