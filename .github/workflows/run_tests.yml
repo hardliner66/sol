@@ -32,7 +32,7 @@ jobs:
         if: runner.os != 'Windows'
         run: |
           cd Odin
-          build_odin.sh release
+          ./build_odin.sh release
 
       - name: Run tests /Windows
         if: runner.os == 'Windows'
