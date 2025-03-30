@@ -217,7 +217,7 @@ resolve :: proc(
 
 	data: [size_of(win32.SYMBOL_INFOW) + size_of([256]win32.WCHAR)]byte
 	symbol := (^win32.SYMBOL_INFOW)(&data[0])
-	symbol.SizeOfStruct = size_of(win32.SYMBOL_INFOW)
+	symbol.SizeOfStruct = size_of(symbol^)
 	symbol.MaxNameLen = 255
 	addr := fmt.aprintf("0x%x", frame, allocator = allocator)
 	fl.frame = addr
