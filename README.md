@@ -8,6 +8,7 @@ be useful for others as well.
 - [Fixed Dynamic Array](#fixed-dynamic-array)
   - [Fixed Dynamic Array / Iter](#fixed-dynamic-array--iter)
 - [Expression Evaluator](#expression-evaluator)
+- [Stack Tracking Allocator](#stack-tracking-allocator)
 
 ## Opaque
 Adds an opaque value type by basically reinterpreting a datatype as
@@ -71,3 +72,10 @@ can call `parse` in order to get an array of expressions that can be evaluated
 with a call to the `eval_expr` function. The second way is useful if you need to run
 a formula multiple times, so you can cache the parsed expressions and
 don't have to parse it over and over again.
+
+## Stack Tracking Allocator
+This is basically the tracking allocator from the stdlib,
+but it stores a stack trace for the allocation as well.
+
+This way you not only know where the allocation was made,
+but also who called you.
