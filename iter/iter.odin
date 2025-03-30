@@ -17,7 +17,7 @@ OpaqueIterator :: struct($T: typeid) {
 	is_dead:   proc "contextless" (state: ^OpaqueIterator(T)) -> bool,
 	update:    proc "contextless" (state: ^OpaqueIterator(T)),
 	valid:     proc "contextless" (state: ^OpaqueIterator(T)) -> bool,
-	get_item:  proc "contextless" (state: ^OpaqueIterator(T)) -> T,
+	get_item:  proc "contextless" (state: ^OpaqueIterator(T)) -> ^T,
 	died:      proc "contextless" (state: ^OpaqueIterator(T)),
 	can_reset: proc "contextless" (state: ^OpaqueIterator(T)) -> bool,
 	reset:     proc "contextless" (state: ^OpaqueIterator(T)),
@@ -29,7 +29,7 @@ IteratorInterface :: struct($State: typeid, $T: typeid) {
 	is_dead:   proc "contextless" (state: ^State) -> bool,
 	update:    proc "contextless" (state: ^State),
 	valid:     proc "contextless" (state: ^State) -> bool,
-	get_item:  proc "contextless" (state: ^State) -> T,
+	get_item:  proc "contextless" (state: ^State) -> ^T,
 	died:      proc "contextless" (state: ^State),
 	can_reset: proc "contextless" (state: ^State) -> bool,
 	reset:     proc "contextless" (state: ^State),
@@ -71,7 +71,7 @@ erase_type :: proc(it: $I/Iterator($S, $T)) -> OpaqueIterator(T) {
 			it := op.get_ptr(&it.iter, I)
 			return it.valid(&it.state)
 		},
-		get_item = proc "contextless" (it: ^OpaqueIterator(T)) -> T {
+		get_item = proc "contextless" (it: ^OpaqueIterator(T)) -> ^T {
 			it := op.get_ptr(&it.iter, I)
 			return it.get_item(&it.state)
 		},
@@ -125,13 +125,26 @@ validate_iterator :: proc(it: $I/Iterator($S, $T)) -> I {
 	return it
 }
 
-next :: proc "contextless" (it: ^$A/OpaqueIterator($T)) -> (result: T, index: int, ok: bool) {
+next_ref :: proc "contextless" (it: ^$A/OpaqueIterator($T)) -> (result: ^T, index: int, ok: bool) {
 	if it.is_dead(it) {
 		return {}, -1, false
 	}
 	it.update(it)
 	if it.valid(it) {
 		return it.get_item(it), it.index(it), true
+	}
+	it.died(it)
+
+	return {}, -1, false
+}
+
+next_val :: proc "contextless" (it: ^$A/OpaqueIterator($T)) -> (result: T, index: int, ok: bool) {
+	if it.is_dead(it) {
+		return {}, -1, false
+	}
+	it.update(it)
+	if it.valid(it) {
+		return it.get_item(it)^, it.index(it), true
 	}
 	it.died(it)
 

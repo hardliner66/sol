@@ -7,6 +7,7 @@ when RUN_ITER_DEMO {
 		using base:     ba.BaseState,
 		count:          int,
 		original_count: int,
+		tmp:            int,
 	}
 	CountingIterator :: ba.Iterator(CountingState, int)
 
@@ -14,8 +15,9 @@ when RUN_ITER_DEMO {
 		update :: proc "contextless" (state: ^CountingState) {
 			state.index += 1
 		}
-		get_item :: proc "contextless" (state: ^CountingState) -> int {
-			return state.index
+		get_item :: proc "contextless" (state: ^CountingState) -> ^int {
+			state.tmp = state.index
+			return &state.tmp
 		}
 		valid :: proc "contextless" (state: ^CountingState) -> bool {
 			return state.index < state.count
@@ -44,7 +46,7 @@ when RUN_ITER_DEMO {
 				died = died,
 				can_reset = can_reset,
 				reset = reset,
-				state = CountingState{{-1}, count, count},
+				state = CountingState{{-1}, count, count, 0},
 			},
 		)
 	}
@@ -54,7 +56,7 @@ when RUN_ITER_DEMO {
 		it := make_counting_iter(5)
 
 		// iterate over the first 5 numbers
-		for i in ba.next(&it) {
+		for i in ba.next_val(&it) {
 			info("Counting: %v", i)
 		}
 
@@ -62,7 +64,7 @@ when RUN_ITER_DEMO {
 		ba.reset(&it)
 
 		// iterate over the first 5 numbers again
-		for i in ba.next(&it) {
+		for i in ba.next_val(&it) {
 			info("Counting: %v", i)
 		}
 	}

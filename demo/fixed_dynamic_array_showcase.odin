@@ -45,7 +45,7 @@ when RUN_FDA_DEMO {
 
 		i := 0
 		it := fda_iter.make_sync_iter(&array)
-		for item, index in fda_iter.next(&it) {
+		for item, index in fda_iter.next_ref(&it) {
 			info("Index: %v, Value: %v", index, item)
 
 			// remove every third item
@@ -73,7 +73,7 @@ when RUN_FDA_DEMO {
 		}
 
 		i = 0
-		for _ in fda_iter.next(&it) {
+		for _ in fda_iter.next_ref(&it) {
 			fda_iter.unordered_remove_current(&it)
 			fda_iter.push_back(&it, i)
 			fda_iter.pop_back_safe(&it)

@@ -16,7 +16,8 @@ FixedDynamicArraySynchronizedIteratorState :: struct($T: typeid) {
 /// while trying to keep synchronized with the state of the actual array.
 /// the iterator even stays valid, if the array is modified during the iteration
 /// by one of the functions that modify the array through the iterator.
-next :: ba.next
+next_ref :: ba.next_ref
+next_val :: ba.next_val
 reset :: ba.reset
 
 unordered_remove_index :: proc "contextless" (
@@ -169,8 +170,8 @@ make_sync_iter :: proc(
 			},
 			get_item = proc "contextless" (
 				state: ^FixedDynamicArraySynchronizedIteratorState(T),
-			) -> T {
-				return state.array.data[state.index]
+			) -> ^T {
+				return &state.array.data[state.index]
 			},
 			index = ba.index,
 			died = proc "contextless" (state: ^FixedDynamicArraySynchronizedIteratorState(T)) {
