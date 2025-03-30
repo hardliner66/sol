@@ -6,9 +6,18 @@ import "core:mem"
 
 OPAQUE_ALIGNMENT :: #config(OPAQUE_ALIGNMENT, 16)
 
+OpaquePtr :: struct {
+	data: rawptr,
+	type: typeid,
+}
+
 Opaque :: struct($MaxSize: int) #align (OPAQUE_ALIGNMENT) {
 	data: [MaxSize]byte,
 	type: typeid,
+}
+
+make_opaque_ptr :: proc(ptr: ^$T) -> OpaquePtr {
+	return {data = rawptr(ptr), type = T}
 }
 
 make_opaque_sized :: proc(value: $T, $S: int) -> (opaque: Opaque(S)) {

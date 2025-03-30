@@ -18,11 +18,28 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Set up Odin
-        uses: laytan/setup-odin@v2
-        with:
-          release: false
-
-      - name: Run test.bat
+      - name: Clone Odin
         run: |
-          call odin test tests -all-packages -debug
+          git clone --recursive https://github.com/odin-lang/Odin
+
+      - name: Set up Odin (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cd Odin
+          build.bat release
+
+      - name: Set up Odin (Linux)
+        if: runner.os != 'Windows'
+        run: |
+          cd Odin
+          build_odin.sh release
+
+      - name: Run tests /Windows
+        if: runner.os == 'Windows'
+        run: |
+          call Odin/odin.exe test tests -all-packages -debug
+
+      - name: Run tests (Linux)
+        if: runner.os != 'Windows'
+        run: |
+          ./Odin/odin test tests -all-packages -debug
