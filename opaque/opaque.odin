@@ -4,17 +4,26 @@ import "base:intrinsics"
 import "core:bytes"
 import "core:mem"
 
-Opaque :: struct($MaxSize: int) {
+OPAQUE_ALIGNMENT :: #config(OPAQUE_ALIGNMENT, 16)
+
+Opaque :: struct($MaxSize: int) #align (OPAQUE_ALIGNMENT) {
 	data: [MaxSize]byte,
 	type: typeid,
 }
 
 make_opaque_sized :: proc(value: $T, $S: int) -> (opaque: Opaque(S)) {
 	#assert(size_of(T) <= S, "Opaque size exceeds maximum size")
+	#assert(
+		align_of(T) <= align_of(Opaque(S)),
+		"The type must have the same alignment as the opaque struct or lower",
+	)
+	#assert(
+		align_of(Opaque(S)) % align_of(T) == 0,
+		"The alignment of the opaque struct must be a multiple of the type's alignment",
+	)
 	opaque.type = T
 	bytes := transmute([size_of(T)]byte)value
 	copy(opaque.data[:], bytes[:])
-	// mem.copy(&opaque.data, raw_data(bytes), size_of(T))
 	return opaque
 }
 
@@ -26,12 +35,12 @@ get_ptr_safe :: proc "contextless" (opaque: ^Opaque($S), $T: typeid) -> (value: 
 	context = {}
 	(opaque.type == T) or_return
 
-	result := transmute(^T)(&opaque.data)
+	result := transmute(^T)(bytes.ptr_from_bytes(opaque.data[:]))
 
 	p1 := rawptr(&opaque.data)
 	p2 := rawptr(result)
 
-	assert(p1 == p2, "Expected different pointers")
+	assert(p1 == p2, "Expected pointers to be the same")
 
 	return result, true
 }
