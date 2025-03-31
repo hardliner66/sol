@@ -19,7 +19,7 @@ when RUN_ITER_DEMO {
 			state.tmp = state.index
 			return &state.tmp
 		}
-		valid :: proc "contextless" (state: ^CountingState) -> bool {
+		is_valid :: proc "contextless" (state: ^CountingState) -> bool {
 			return state.index < state.count
 		}
 		can_reset :: proc "contextless" (state: ^CountingState) -> bool {
@@ -32,10 +32,9 @@ when RUN_ITER_DEMO {
 
 		return ba.make_iterator(
 			CountingIterator {
-				index = ba.index,
 				update = update,
 				get_item = get_item,
-				valid = valid,
+				is_valid = is_valid,
 				can_reset = can_reset,
 				reset = reset,
 				state = CountingState{{-1}, count, count, 0},

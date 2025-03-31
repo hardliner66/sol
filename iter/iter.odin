@@ -8,15 +8,15 @@ BaseState :: struct {
 	index: int,
 }
 
-index :: proc "contextless" (state: ^BaseState) -> int {
+get_index :: proc "contextless" (state: ^BaseState) -> int {
 	return state.index
 }
 
 Iterator :: struct($T: typeid) {
-	index:     proc "contextless" (state: ^Iterator(T)) -> int,
+	get_index: proc "contextless" (state: ^Iterator(T)) -> int,
 	is_dead:   proc "contextless" (state: ^Iterator(T)) -> bool,
 	update:    proc "contextless" (state: ^Iterator(T)),
-	valid:     proc "contextless" (state: ^Iterator(T)) -> bool,
+	is_valid:  proc "contextless" (state: ^Iterator(T)) -> bool,
 	get_item:  proc "contextless" (state: ^Iterator(T)) -> ^T,
 	can_reset: proc "contextless" (state: ^Iterator(T)) -> bool,
 	reset:     proc "contextless" (state: ^Iterator(T)),
@@ -24,10 +24,10 @@ Iterator :: struct($T: typeid) {
 }
 
 IteratorInterface :: struct($State: typeid, $T: typeid) {
-	index:     proc "contextless" (state: ^BaseState) -> int,
+	get_index: proc "contextless" (state: ^BaseState) -> int,
 	is_dead:   proc "contextless" (state: ^State) -> bool,
 	update:    proc "contextless" (state: ^State),
-	valid:     proc "contextless" (state: ^State) -> bool,
+	is_valid:  proc "contextless" (state: ^State) -> bool,
 	get_item:  proc "contextless" (state: ^State) -> ^T,
 	can_reset: proc "contextless" (state: ^State) -> bool,
 	reset:     proc "contextless" (state: ^State),
@@ -53,9 +53,9 @@ make_iterator :: proc(it: $I/TypedIterator($S, $T)) -> Iterator(T) {
 
 erase_type :: proc(it: $I/TypedIterator($S, $T)) -> Iterator(T) {
 	opaque := Iterator(T) {
-		index = proc "contextless" (it: ^Iterator(T)) -> int {
+		get_index = proc "contextless" (it: ^Iterator(T)) -> int {
 			it := op.get_ptr(&it.inner, I)
-			return it.index(&it.state)
+			return it.get_index(&it.state)
 		},
 		is_dead = proc "contextless" (it: ^Iterator(T)) -> bool {
 			it := op.get_ptr(&it.inner, I)
@@ -65,9 +65,9 @@ erase_type :: proc(it: $I/TypedIterator($S, $T)) -> Iterator(T) {
 			it := op.get_ptr(&it.inner, I)
 			it.update(&it.state)
 		},
-		valid = proc "contextless" (it: ^Iterator(T)) -> bool {
+		is_valid = proc "contextless" (it: ^Iterator(T)) -> bool {
 			it := op.get_ptr(&it.inner, I)
-			return it.valid(&it.state)
+			return it.is_valid(&it.state)
 		},
 		get_item = proc "contextless" (it: ^Iterator(T)) -> ^T {
 			it := op.get_ptr(&it.inner, I)
@@ -92,10 +92,10 @@ erase_type :: proc(it: $I/TypedIterator($S, $T)) -> Iterator(T) {
 validate_iterator :: proc(it: $I/TypedIterator($S, $T)) -> I {
 	it := it
 	assert(it.update != nil, "update must be set")
-	assert(it.valid != nil, "valid must be set")
+	assert(it.is_valid != nil, "valid must be set")
 	assert(it.get_item != nil, "get_item must be set")
-	if it.index == nil {
-		it.index = index
+	if it.get_index == nil {
+		it.get_index = get_index
 	}
 	if it.is_dead == nil {
 		it.is_dead = proc "contextless" (state: ^S) -> bool {
@@ -119,8 +119,8 @@ next_ref :: proc "contextless" (it: ^$A/Iterator($T)) -> (result: ^T, index: int
 		return {}, -1, false
 	}
 	it.update(it)
-	if it.valid(it) {
-		return it.get_item(it), it.index(it), true
+	if it.is_valid(it) {
+		return it.get_item(it), it.get_index(it), true
 	}
 
 	return {}, -1, false

@@ -118,7 +118,7 @@ make_sync_iter :: proc(
 		update = proc "contextless" (state: ^FixedDynamicArraySynchronizedIteratorState(T)) {
 			sync_or_increment(state)
 		},
-		valid = proc "contextless" (
+		is_valid = proc "contextless" (
 			state: ^FixedDynamicArraySynchronizedIteratorState(T),
 		) -> bool {
 			if (state.index < state.array.len) {
@@ -135,7 +135,6 @@ make_sync_iter :: proc(
 		) -> ^T {
 			return &state.array.data[state.index]
 		},
-		index = ba.index,
 		can_reset = proc "contextless" (
 			state: ^FixedDynamicArraySynchronizedIteratorState(T),
 		) -> bool {
