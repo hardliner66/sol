@@ -127,15 +127,12 @@ next_ref :: proc "contextless" (it: ^$A/Iterator($T)) -> (result: ^T, index: int
 }
 
 next_val :: proc "contextless" (it: ^$A/Iterator($T)) -> (result: T, index: int, ok: bool) {
-	if it.is_dead(it) {
-		return {}, -1, false
+	tmp: ^T
+	tmp, index, ok = next_ref(it)
+	if ok {
+		result = tmp^
 	}
-	it.update(it)
-	if it.valid(it) {
-		return it.get_item(it)^, it.index(it), true
-	}
-
-	return {}, -1, false
+	return
 }
 
 reset :: proc "contextless" (it: ^$A/Iterator($T)) -> bool {
