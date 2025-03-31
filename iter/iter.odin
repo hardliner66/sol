@@ -128,10 +128,8 @@ next_ref :: proc "contextless" (it: ^$A/Iterator($T)) -> (result: ^T, index: int
 
 next_val :: proc "contextless" (it: ^$A/Iterator($T)) -> (result: T, index: int, ok: bool) {
 	tmp: ^T
-	tmp, index, ok = next_ref(it)
-	if ok {
-		result = tmp^
-	}
+	tmp, index = next_ref(it) or_return
+	result = tmp^
 	return
 }
 
