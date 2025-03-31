@@ -8,10 +8,6 @@ BaseState :: struct {
 	index: int,
 }
 
-get_index :: proc "contextless" (state: ^BaseState) -> int {
-	return state.index
-}
-
 Iterator :: struct($T: typeid) {
 	get_index: proc "contextless" (state: ^Iterator(T)) -> int,
 	is_dead:   proc "contextless" (state: ^Iterator(T)) -> bool,
@@ -24,12 +20,37 @@ Iterator :: struct($T: typeid) {
 }
 
 IteratorInterface :: struct($State: typeid, $T: typeid) {
+	/// OPTIONAL
+	/// Retrieves the current index of the iterator
+	/// This gets returned to the user when calling next_val or next_ref
+	/// so it can be used as an index in the for loop
+	/// DEFAULT: returns the index from the base state
 	get_index: proc "contextless" (state: ^BaseState) -> int,
+	/// OPTIONAL
+	/// Checks if the iterator is dead.
+	/// An iterator is considered dead, when it has been determined that
+	/// is no longer valid and cannot be used anymore. Not even after a reset.
+	/// DEFAULT: returns false
 	is_dead:   proc "contextless" (state: ^State) -> bool,
+	/// REQUIRED
+	/// Advances the the iterator by updating its internal state
 	update:    proc "contextless" (state: ^State),
+	/// REQUIRED
+	/// Checks if the iterator is in a valid state to return an item.
 	is_valid:  proc "contextless" (state: ^State) -> bool,
+	/// REQUIRED
+	/// Returns a pointer to the current item of the iterator.
+	/// We need to return a pointer here,
+	/// otherwise iterating with reference semantics wouldn't work
 	get_item:  proc "contextless" (state: ^State) -> ^T,
+	/// OPTIONAL
+	/// Returns if the iterator can be reset, so it can be reused.
+	/// DEFAULT: returns false
 	can_reset: proc "contextless" (state: ^State) -> bool,
+	/// OPTIONAL
+	/// Changes the internal state of the iterator,
+	/// so it can be used again
+	/// DEFAULT: does nothing
 	reset:     proc "contextless" (state: ^State),
 }
 
@@ -95,7 +116,9 @@ validate_iterator :: proc(it: $I/TypedIterator($S, $T)) -> I {
 	assert(it.is_valid != nil, "valid must be set")
 	assert(it.get_item != nil, "get_item must be set")
 	if it.get_index == nil {
-		it.get_index = get_index
+		it.get_index = proc "contextless" (state: ^BaseState) -> int {
+			return state.index
+		}
 	}
 	if it.is_dead == nil {
 		it.is_dead = proc "contextless" (state: ^S) -> bool {
