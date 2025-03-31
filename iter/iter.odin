@@ -18,7 +18,6 @@ Iterator :: struct($T: typeid) {
 	update:    proc "contextless" (state: ^Iterator(T)),
 	valid:     proc "contextless" (state: ^Iterator(T)) -> bool,
 	get_item:  proc "contextless" (state: ^Iterator(T)) -> ^T,
-	died:      proc "contextless" (state: ^Iterator(T)),
 	can_reset: proc "contextless" (state: ^Iterator(T)) -> bool,
 	reset:     proc "contextless" (state: ^Iterator(T)),
 	inner:     op.OpaqueInline(MAX_ITERATOR_SIZE),
@@ -30,7 +29,6 @@ IteratorInterface :: struct($State: typeid, $T: typeid) {
 	update:    proc "contextless" (state: ^State),
 	valid:     proc "contextless" (state: ^State) -> bool,
 	get_item:  proc "contextless" (state: ^State) -> ^T,
-	died:      proc "contextless" (state: ^State),
 	can_reset: proc "contextless" (state: ^State) -> bool,
 	reset:     proc "contextless" (state: ^State),
 }
@@ -75,10 +73,6 @@ erase_type :: proc(it: $I/TypedIterator($S, $T)) -> Iterator(T) {
 			it := op.get_ptr(&it.inner, I)
 			return it.get_item(&it.state)
 		},
-		died = proc "contextless" (it: ^Iterator(T)) {
-			it := op.get_ptr(&it.inner, I)
-			it.died(&it.state)
-		},
 		can_reset = proc "contextless" (it: ^Iterator(T)) -> bool {
 			it := op.get_ptr(&it.inner, I)
 			return it.can_reset(&it.state)
@@ -103,12 +97,7 @@ validate_iterator :: proc(it: $I/TypedIterator($S, $T)) -> I {
 	if it.index == nil {
 		it.index = index
 	}
-	if it.died != nil {
-		assert(it.is_dead != nil, "if died is set, is_dead must be set")
-	} else {
-		it.died = proc "contextless" (state: ^S) {
-			// do nothing
-		}
+	if it.is_dead == nil {
 		it.is_dead = proc "contextless" (state: ^S) -> bool {
 			return false
 		}
@@ -133,7 +122,6 @@ next_ref :: proc "contextless" (it: ^$A/Iterator($T)) -> (result: ^T, index: int
 	if it.valid(it) {
 		return it.get_item(it), it.index(it), true
 	}
-	it.died(it)
 
 	return {}, -1, false
 }
@@ -146,7 +134,6 @@ next_val :: proc "contextless" (it: ^$A/Iterator($T)) -> (result: T, index: int,
 	if it.valid(it) {
 		return it.get_item(it)^, it.index(it), true
 	}
-	it.died(it)
 
 	return {}, -1, false
 }

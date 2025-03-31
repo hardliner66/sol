@@ -22,12 +22,6 @@ when RUN_ITER_DEMO {
 		valid :: proc "contextless" (state: ^CountingState) -> bool {
 			return state.index < state.count
 		}
-		is_dead :: proc "contextless" (state: ^CountingState) -> bool {
-			return state.count < 0
-		}
-		died :: proc "contextless" (state: ^CountingState) {
-			state.count = -1
-		}
 		can_reset :: proc "contextless" (state: ^CountingState) -> bool {
 			return true
 		}
@@ -42,8 +36,6 @@ when RUN_ITER_DEMO {
 				update = update,
 				get_item = get_item,
 				valid = valid,
-				is_dead = is_dead,
-				died = died,
 				can_reset = can_reset,
 				reset = reset,
 				state = CountingState{{-1}, count, count, 0},

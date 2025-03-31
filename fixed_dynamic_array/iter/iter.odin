@@ -25,9 +25,6 @@ unordered_remove_index :: proc "contextless" (
 	index: int,
 	loc := #caller_location,
 ) #no_bounds_check {
-	if is_dead(it) {
-		return
-	}
 	state := ba.state(it, FixedDynamicArraySynchronizedIteratorState(T))
 	fda.unordered_remove(state.array, index, loc)
 	if index < state.index {
@@ -44,9 +41,6 @@ ordered_remove_index :: proc "contextless" (
 	index: int,
 	loc := #caller_location,
 ) #no_bounds_check {
-	if is_dead(it) {
-		return
-	}
 	state := ba.state(it, FixedDynamicArraySynchronizedIteratorState(T))
 	fda.ordered_remove(state.array, index, loc)
 	if index > state.index {
@@ -60,27 +54,11 @@ ordered_remove_index :: proc "contextless" (
 	// because the index is only incremented when the expected length is the same as the current length
 }
 
-@(private)
-is_dead :: proc "contextless" (it: ^$I/ba.Iterator($T)) -> bool {
-	state := ba.state(it, FixedDynamicArraySynchronizedIteratorState(T))
-	return state.expected_len < 0
-}
-
-@(private)
-is_dead_state :: proc "contextless" (
-	state: ^$I/FixedDynamicArraySynchronizedIteratorState($T),
-) -> bool {
-	return state.expected_len < 0
-}
-
 unordered_remove_ptr :: proc "contextless" (
 	it: ^$I/ba.Iterator($T),
 	ptr: ^T,
 	loc := #caller_location,
 ) #no_bounds_check {
-	if is_dead(it) {
-		return
-	}
 	unordered_remove_index(it, index_from_ptr(it, ptr), loc)
 }
 
@@ -89,31 +67,19 @@ ordered_remove_ptr :: proc "contextless" (
 	ptr: ^T,
 	loc := #caller_location,
 ) #no_bounds_check {
-	if is_dead(it) {
-		return
-	}
 	ordered_remove_index(it, index_from_ptr(it, ptr), loc)
 }
 
 unordered_remove_current :: proc "contextless" (it: ^$I/ba.Iterator($T)) #no_bounds_check {
-	if is_dead(it) {
-		return
-	}
 	state := ba.state(it, FixedDynamicArraySynchronizedIteratorState(T))
 	fda.unordered_remove(state.array, state.index)
 }
 
 ordered_remove_current :: proc "contextless" (it: ^$I/ba.Iterator($T)) #no_bounds_check {
-	if is_dead(it) {
-		return
-	}
 	fda.ordered_remove(it.state.array, it.state.index)
 }
 
 push_back :: proc "contextless" (it: ^$I/ba.Iterator($T), item: T) -> (ok: bool) {
-	if is_dead(it) {
-		return false
-	}
 	state := ba.state(it, FixedDynamicArraySynchronizedIteratorState(T))
 	ok = fda.push_back(state.array, item)
 	if ok {
@@ -123,7 +89,6 @@ push_back :: proc "contextless" (it: ^$I/ba.Iterator($T), item: T) -> (ok: bool)
 }
 
 pop_back_safe :: proc "contextless" (it: ^$I/ba.Iterator($T)) -> (item: T, ok: bool) {
-	is_dead(it) or_return
 	state := ba.state(it, FixedDynamicArraySynchronizedIteratorState(T))
 	item = fda.pop_back_safe(state.array) or_return
 	state.expected_len -= 1
@@ -131,16 +96,12 @@ pop_back_safe :: proc "contextless" (it: ^$I/ba.Iterator($T)) -> (item: T, ok: b
 }
 
 clear :: proc "contextless" (it: ^$I/ba.Iterator($T)) {
-	if is_dead(it) {
-		return
-	}
 	state := ba.state(it, FixedDynamicArraySynchronizedIteratorState(T))
 	fda.clear(state.array)
 	state.expected_len = 0
 }
 
 push_back_elems :: proc "contextless" (it: ^$I/ba.Iterator($T), items: ..T) -> (ok: bool) {
-	is_dead(it) or_return
 	count := len(items)
 	state := ba.state(it, FixedDynamicArraySynchronizedIteratorState(T))
 	ok = fda.push_back_elems(state.array, ..items)
@@ -153,46 +114,38 @@ make_sync_iter :: proc(
 	it: ^$A/fda.FixedDynamicArray($T),
 	auto_reset: bool = false,
 ) -> ba.Iterator(T) {
-	return ba.make_iterator(
-		ba.TypedIterator(FixedDynamicArraySynchronizedIteratorState(T), T) {
-			is_dead = proc "contextless" (
-				state: ^FixedDynamicArraySynchronizedIteratorState(T),
-			) -> bool {
-				return is_dead_state(state)
-			},
-			update = proc "contextless" (state: ^FixedDynamicArraySynchronizedIteratorState(T)) {
-				sync_or_increment(state)
-			},
-			valid = proc "contextless" (
-				state: ^FixedDynamicArraySynchronizedIteratorState(T),
-			) -> bool {
-				return state.index < state.array.len
-			},
-			get_item = proc "contextless" (
-				state: ^FixedDynamicArraySynchronizedIteratorState(T),
-			) -> ^T {
-				return &state.array.data[state.index]
-			},
-			index = ba.index,
-			died = proc "contextless" (state: ^FixedDynamicArraySynchronizedIteratorState(T)) {
-				// mark dead
-				state.expected_len = -1
-
-				if state.auto_reset {
-					internal_reset(state)
-				}
-			},
-			can_reset = proc "contextless" (
-				state: ^FixedDynamicArraySynchronizedIteratorState(T),
-			) -> bool {
-				return true
-			},
-			reset = proc "contextless" (state: ^FixedDynamicArraySynchronizedIteratorState(T)) {
-				internal_reset(state)
-			},
-			state = {{-1}, it, fda.len(it^), auto_reset},
+	return ba.make_iterator(ba.TypedIterator(FixedDynamicArraySynchronizedIteratorState(T), T) {
+		update = proc "contextless" (state: ^FixedDynamicArraySynchronizedIteratorState(T)) {
+			sync_or_increment(state)
 		},
-	)
+		valid = proc "contextless" (
+			state: ^FixedDynamicArraySynchronizedIteratorState(T),
+		) -> bool {
+			if (state.index < state.array.len) {
+				return true
+			}
+
+			if state.auto_reset {
+				internal_reset(state)
+			}
+			return false
+		},
+		get_item = proc "contextless" (
+			state: ^FixedDynamicArraySynchronizedIteratorState(T),
+		) -> ^T {
+			return &state.array.data[state.index]
+		},
+		index = ba.index,
+		can_reset = proc "contextless" (
+			state: ^FixedDynamicArraySynchronizedIteratorState(T),
+		) -> bool {
+			return true
+		},
+		reset = proc "contextless" (state: ^FixedDynamicArraySynchronizedIteratorState(T)) {
+			internal_reset(state)
+		},
+		state = {{-1}, it, fda.len(it^), auto_reset},
+	})
 }
 
 @(private = "file")
