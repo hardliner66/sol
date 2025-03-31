@@ -4,7 +4,7 @@ import "core:mem"
 import "core:testing"
 
 @(test)
-test_same_bytes_value :: proc(t: ^testing.T) {
+boxed_test_same_bytes_value :: proc(t: ^testing.T) {
 	SomeType :: struct {
 		a: int,
 		b: f32,
@@ -15,7 +15,9 @@ test_same_bytes_value :: proc(t: ^testing.T) {
 	}
 	// api usage
 	original_value_ptr := &original_value
-	opaque := make_opaque(original_value)
+	opaque, err := make_opaque_boxed(original_value)
+	assert(err == nil)
+	defer destroy_boxed_opaque(&opaque)
 	new := get_value(opaque, SomeType)
 
 	// tests
@@ -42,7 +44,7 @@ test_same_bytes_value :: proc(t: ^testing.T) {
 }
 
 @(test)
-test_same_bytes_ptr :: proc(t: ^testing.T) {
+boxed_test_same_bytes_ptr :: proc(t: ^testing.T) {
 	SomeType :: struct {
 		a: int,
 		b: f32,
@@ -53,7 +55,9 @@ test_same_bytes_ptr :: proc(t: ^testing.T) {
 	}
 	// api usage
 	original_value_ptr := &original_value
-	opaque := make_opaque(original_value)
+	opaque, err := make_opaque_boxed(original_value)
+	assert(err == nil)
+	defer destroy_boxed_opaque(&opaque)
 	new_ptr := get_ptr(&opaque, SomeType)
 
 	// tests
@@ -64,7 +68,7 @@ test_same_bytes_ptr :: proc(t: ^testing.T) {
 	testing.expect(t, original_value_ptr != new_ptr, "Expected different pointer than original")
 
 	p1 := rawptr(new_ptr)
-	p2 := rawptr(&opaque.data)
+	p2 := raw_data(opaque.data)
 
 	// any idea why the pointers are different by a small amount? 0x1001FF7D0 :: 0x1001FF7A0
 	testing.expectf(
@@ -92,37 +96,38 @@ test_same_bytes_ptr :: proc(t: ^testing.T) {
 }
 
 @(test)
-test_opaque_with_different_types :: proc(t: ^testing.T) {
-	IntType :: struct {
-		a: int,
-	}
-	FloatType :: struct {
-		b: f32,
-	}
+boxed_test_opaque_with_different_types :: proc(t: ^testing.T) {
 	ComplexType :: struct {
 		x: int,
 		y: f32,
 		z: string,
 	}
 
-	int_value := IntType {
-		a = 123,
-	}
-	float_value := FloatType {
-		b = 3.14,
-	}
+	int_value: int = 123
+	float_value: f32 = 3.14
 	complex_value := ComplexType {
 		x = 42,
 		y = 2.71,
 		z = "hello",
 	}
 
-	int_opaque := make_opaque(int_value)
-	float_opaque := make_opaque(float_value)
-	complex_opaque := make_opaque(complex_value)
+	err: mem.Allocator_Error
 
-	int_new := get_value(int_opaque, IntType)
-	float_new := get_value(float_opaque, FloatType)
+	int_opaque: OpaqueBoxed
+	int_opaque, err = make_opaque_boxed(int_value)
+	assert(err == nil)
+	defer destroy_boxed_opaque(&int_opaque)
+	float_opaque: OpaqueBoxed
+	float_opaque, err = make_opaque_boxed(float_value)
+	assert(err == nil)
+	defer destroy_boxed_opaque(&float_opaque)
+	complex_opaque: OpaqueBoxed
+	complex_opaque, err = make_opaque_boxed(complex_value)
+	assert(err == nil)
+	defer destroy_boxed_opaque(&complex_opaque)
+
+	int_new := get_value(int_opaque, int)
+	float_new := get_value(float_opaque, f32)
 	complex_new := get_value(complex_opaque, ComplexType)
 
 	testing.expect(t, int_value == int_new, "Expected int values to match")
@@ -131,7 +136,7 @@ test_opaque_with_different_types :: proc(t: ^testing.T) {
 }
 
 @(test)
-test_opaque_alignment :: proc(t: ^testing.T) {
+boxed_test_opaque_alignment :: proc(t: ^testing.T) {
 	AlignedType :: struct #align (16) {
 		a: int,
 		b: f32,
@@ -141,12 +146,14 @@ test_opaque_alignment :: proc(t: ^testing.T) {
 		b = 3.14,
 	}
 
-	opaque := make_opaque(aligned_value)
+	opaque, err := make_opaque_boxed(aligned_value)
+	assert(err == nil)
+	defer destroy_boxed_opaque(&opaque)
 	new_value := get_value(opaque, AlignedType)
 
 	testing.expect(t, aligned_value == new_value, "Expected aligned values to match")
 
-	v := uintptr(rawptr(&opaque.data)) % align_of(AlignedType) == 0
+	v := uintptr(raw_data(opaque.data)) % align_of(AlignedType) == 0
 	testing.expectf(
 		t,
 		v,
@@ -157,7 +164,7 @@ test_opaque_alignment :: proc(t: ^testing.T) {
 }
 
 @(test)
-test_opaque_large_struct :: proc(t: ^testing.T) {
+boxed_test_opaque_large_struct :: proc(t: ^testing.T) {
 	LargeType :: struct {
 		data: [1024]u8,
 	}
@@ -165,26 +172,30 @@ test_opaque_large_struct :: proc(t: ^testing.T) {
 		data = {0 = 1, 1 = 2, 2 = 3},
 	}
 
-	opaque := make_opaque(large_value)
+	opaque, err := make_opaque_boxed(large_value)
+	assert(err == nil)
+	defer destroy_boxed_opaque(&opaque)
 	new_value := get_value(opaque, LargeType)
 
 	testing.expect(t, large_value == new_value, "Expected large struct values to match")
 }
 
 @(test)
-test_opaque_zero_sized_type :: proc(t: ^testing.T) {
+boxed_test_opaque_zero_sized_type :: proc(t: ^testing.T) {
 	ZeroSizedType :: struct {
 	}
 	zero_value := ZeroSizedType{}
 
-	opaque := make_opaque(zero_value)
+	opaque, err := make_opaque_boxed(zero_value)
+	assert(err == nil)
+	defer destroy_boxed_opaque(&opaque)
 	new_value := get_value(opaque, ZeroSizedType)
 
 	testing.expect(t, zero_value == new_value, "Expected zero-sized type values to match")
 }
 
 @(test)
-test_opaque_nested_structs :: proc(t: ^testing.T) {
+boxed_test_opaque_nested_structs :: proc(t: ^testing.T) {
 	NestedType :: struct {
 		a: int,
 		b: struct {
@@ -197,14 +208,16 @@ test_opaque_nested_structs :: proc(t: ^testing.T) {
 		b = {c = 3.14, d = "nested"},
 	}
 
-	opaque := make_opaque(nested_value)
+	opaque, err := make_opaque_boxed(nested_value)
+	assert(err == nil)
+	defer destroy_boxed_opaque(&opaque)
 	new_value := get_value(opaque, NestedType)
 
 	testing.expect(t, nested_value == new_value, "Expected nested struct values to match")
 }
 
 @(test)
-test_opaque_pointer_handling :: proc(t: ^testing.T) {
+boxed_test_opaque_pointer_handling :: proc(t: ^testing.T) {
 	PointerType :: struct {
 		ptr: ^int,
 	}
@@ -213,7 +226,9 @@ test_opaque_pointer_handling :: proc(t: ^testing.T) {
 		ptr = &value,
 	}
 
-	opaque := make_opaque(pointer_value)
+	opaque, err := make_opaque_boxed(pointer_value)
+	assert(err == nil)
+	defer destroy_boxed_opaque(&opaque)
 	new_value := get_value(opaque, PointerType)
 
 	testing.expect(t, pointer_value.ptr == new_value.ptr, "Expected pointers to match")
@@ -225,18 +240,20 @@ test_opaque_pointer_handling :: proc(t: ^testing.T) {
 }
 
 @(test)
-test_opaque_array_handling :: proc(t: ^testing.T) {
+boxed_test_opaque_array_handling :: proc(t: ^testing.T) {
 	ArrayType :: [5]int
 	array_value := ArrayType{1, 2, 3, 4, 5}
 
-	opaque := make_opaque(array_value)
+	opaque, err := make_opaque_boxed(array_value)
+	assert(err == nil)
+	defer destroy_boxed_opaque(&opaque)
 	new_value := get_value(opaque, ArrayType)
 
 	testing.expect(t, array_value == new_value, "Expected array values to match")
 }
 
 @(test)
-test_opaque_invalid_cast :: proc(t: ^testing.T) {
+boxed_test_opaque_invalid_cast :: proc(t: ^testing.T) {
 	SomeType :: struct {
 		a: int,
 	}
@@ -247,94 +264,10 @@ test_opaque_invalid_cast :: proc(t: ^testing.T) {
 	value := SomeType {
 		a = 42,
 	}
-	opaque := make_opaque(value)
+	opaque, err := make_opaque_boxed(value)
+	assert(err == nil)
+	defer destroy_boxed_opaque(&opaque)
 
 	_, ok := get_value_safe(opaque, OtherType) // This should panic
 	testing.expect(t, !ok, "Expected panic on invalid cast")
-}
-
-@(test)
-test_opaque_reuse :: proc(t: ^testing.T) {
-	SomeType :: struct {
-		a: int,
-	}
-	value1 := SomeType {
-		a = 42,
-	}
-	value2 := SomeType {
-		a = 99,
-	}
-
-	opaque := make_opaque(value1)
-	opaque = make_opaque(value2) // Reuse the same opaque container
-
-	new_value := get_value(opaque, SomeType)
-	testing.expect(
-		t,
-		value2 == new_value,
-		"Expected reused opaque container to hold the new value",
-	)
-}
-
-@(test)
-test_opaque_ptr_basic :: proc(t: ^testing.T) {
-	PointerType :: struct {
-		ptr: ^int,
-	}
-	value := 42
-	pointer_value := PointerType {
-		ptr = &value,
-	}
-
-	opaque_ptr := make_opaque_ptr(pointer_value.ptr)
-	new_ptr := from_opaque_ptr(opaque_ptr, int)
-
-	testing.expect(t, pointer_value.ptr == new_ptr, "Expected pointers to match")
-	testing.expect(
-		t,
-		pointer_value.ptr^ == new_ptr^,
-		"Expected dereferenced pointer values to match",
-	)
-}
-
-@(test)
-test_opaque_ptr_nested :: proc(t: ^testing.T) {
-	NestedPointerType :: struct {
-		ptr: ^^int,
-	}
-	value := 42
-	value_ptr := &value
-	nested_pointer_value := NestedPointerType {
-		ptr = &value_ptr,
-	}
-
-	opaque_ptr := make_opaque_ptr(nested_pointer_value.ptr)
-	new_ptr := from_opaque_ptr(opaque_ptr, ^int)
-
-	testing.expect(t, nested_pointer_value.ptr == new_ptr, "Expected nested pointers to match")
-	testing.expect(
-		t,
-		nested_pointer_value.ptr^^ == new_ptr^^,
-		"Expected dereferenced nested pointer values to match",
-	)
-}
-
-@(test)
-test_opaque_ptr_invalid_cast :: proc(t: ^testing.T) {
-	PointerType :: struct {
-		ptr: ^int,
-	}
-	OtherPointerType :: struct {
-		ptr: ^f32,
-	}
-
-	value := 42
-	pointer_value := PointerType {
-		ptr = &value,
-	}
-
-	opaque_ptr := make_opaque_ptr(pointer_value.ptr)
-
-	_, ok := from_opaque_ptr_safe(opaque_ptr, f32) // This should panic
-	testing.expect(t, !ok, "Expected panic on invalid pointer cast")
 }

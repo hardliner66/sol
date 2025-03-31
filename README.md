@@ -4,6 +4,11 @@ This is a small collection of code I wrote, that I think might
 be useful for others as well.
 
 - [Opaque](#opaque)
+  - [Types](#types)
+    - [OpaqueInline](#opaqueinline)
+    - [OpaqueBoxed](#opaqueboxed)
+    - [OpaquePtr](#opaqueptr)
+  - [When to use which opaque type](#when-to-use-which-opaque-type)
 - [Iter](#iter)
 - [Fixed Dynamic Array](#fixed-dynamic-array)
   - [Fixed Dynamic Array / Iter](#fixed-dynamic-array--iter)
@@ -11,15 +16,62 @@ be useful for others as well.
 - [Stack Tracking Allocator](#stack-tracking-allocator)
 
 ## Opaque
-Adds an opaque value type by basically reinterpreting a datatype as
-an array of bytes and storing that (+ type info). This can be used
-to write type-erased code, like the generic iterator.
+Adds opaque types that can be used to store or pass data with its type erased.
 
 **WARNING: This code transmutes. Use at your own risk.**
 
+### Types
+#### OpaqueInline
+OpaqueInline stores the data internally as a statically sized byte array.
+
+This makes it the simplest opaque type to use, but it comes with a few restrictions.
+
+1) **It needs to know the maximum size you will store inside at compile time**
+
+If you can only dynamically determine what the size is, this type wont work.
+However, you can use the `make_opaque_sized` function, which takes an additional size argument,
+and specify a size thats big enough to hold all instances that you might want.
+
+2) **You shouldn't store pointers to the opaque type itself or the type stored inside**
+
+The whole type lives on the stack and copies the bytes of the type it stores into its
+internal storage. This means that if the opaque goes out of scope, any pointer to it
+or its data is going to be invalid. The upside is, that you don't need to manually free anything.
+
+3) **It can't store arbitrarily big datatypes**
+
+As the whole thing lives on the stack, you cannot store more data than the stack holds.
+
+#### OpaqueBoxed
+OpaqueBoxed stores the data internally as a slice of bytes, which gets allocated on creation.
+It also stores which allocator was used, so it can use the same allocator when it gets destroyed.
+
+This means it can store arbitrarily big data types and pointers to its internal data stay
+valid until it is destroyed.
+
+The biggest drawback is, that you need to call `destroy_boxed_opaque` on it when you're done,
+otherwise it will leak its memory.
+
+#### OpaquePtr
+This is the simplest of the opaque types, yet it can be quite tricky to use.
+Instead of storing the data directly, it takes a pointer and stores it as a rawptr (void* in c).
+
+This means that its your job to guarantee that the data it points to stays valid while the
+OpaquePtr is in use.
+
+### When to use which opaque type
+
+If the data is already on the heap and you just need to store a reference in an untyped manner,
+use an `OpaquePtr`.
+
+If you want to store data in a way that does not allocate or does not need an accompaniying destroy call
+use an `OpaqueInline`.
+
+In any other case use an `OpaqueBoxed`.
+
 ## Iter
 The iter package defines an interface for iterators,
-which can be implemented to allow functions to take an iterator,
+which can be implemented to allow functions to take a generic iterator,
 without knowing exactly how it works underneath.
 
 **WARNING: This code transmutes. Use at your own risk.**
@@ -78,4 +130,4 @@ This is basically the tracking allocator from the stdlib,
 but it stores a stack trace for the allocation as well.
 
 This way you not only know where the allocation was made,
-but also who called you.
+but also what the call history was.

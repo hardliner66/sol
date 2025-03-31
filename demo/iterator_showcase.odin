@@ -9,9 +9,9 @@ when RUN_ITER_DEMO {
 		original_count: int,
 		tmp:            int,
 	}
-	CountingIterator :: ba.Iterator(CountingState, int)
+	CountingIterator :: ba.TypedIterator(CountingState, int)
 
-	make_counting_iter :: proc(count: int) -> ba.OpaqueIterator(int) {
+	make_counting_iter :: proc(count: int) -> ba.Iterator(int) {
 		update :: proc "contextless" (state: ^CountingState) {
 			state.index += 1
 		}
