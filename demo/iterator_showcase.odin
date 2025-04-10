@@ -12,20 +12,20 @@ when RUN_ITER_DEMO {
 	CountingIterator :: ba.TypedIterator(CountingState, int)
 
 	make_counting_iter :: proc(count: int) -> ba.Iterator(int) {
-		update :: proc "contextless" (state: ^CountingState) {
+		update :: proc(state: ^CountingState) {
 			state.index += 1
 		}
-		get_item :: proc "contextless" (state: ^CountingState) -> ^int {
+		get_item :: proc(state: ^CountingState) -> ^int {
 			state.tmp = state.index
 			return &state.tmp
 		}
-		is_valid :: proc "contextless" (state: ^CountingState) -> bool {
+		is_valid :: proc(state: ^CountingState) -> bool {
 			return state.index < state.count
 		}
-		can_reset :: proc "contextless" (state: ^CountingState) -> bool {
+		can_reset :: proc(state: ^CountingState) -> bool {
 			return true
 		}
-		reset :: proc "contextless" (state: ^CountingState) {
+		reset :: proc(state: ^CountingState) {
 			state.index = -1
 			state.count = state.original_count
 		}

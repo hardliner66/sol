@@ -115,12 +115,10 @@ make_sync_iter :: proc(
 	auto_reset: bool = false,
 ) -> ba.Iterator(T) {
 	return ba.make_iterator(ba.TypedIterator(FixedDynamicArraySynchronizedIteratorState(T), T) {
-		update = proc "contextless" (state: ^FixedDynamicArraySynchronizedIteratorState(T)) {
+		update = proc(state: ^FixedDynamicArraySynchronizedIteratorState(T)) {
 			sync_or_increment(state)
 		},
-		is_valid = proc "contextless" (
-			state: ^FixedDynamicArraySynchronizedIteratorState(T),
-		) -> bool {
+		is_valid = proc(state: ^FixedDynamicArraySynchronizedIteratorState(T)) -> bool {
 			if (state.index < state.array.len) {
 				return true
 			}
@@ -130,17 +128,13 @@ make_sync_iter :: proc(
 			}
 			return false
 		},
-		get_item = proc "contextless" (
-			state: ^FixedDynamicArraySynchronizedIteratorState(T),
-		) -> ^T {
+		get_item = proc(state: ^FixedDynamicArraySynchronizedIteratorState(T)) -> ^T {
 			return &state.array.data[state.index]
 		},
-		can_reset = proc "contextless" (
-			state: ^FixedDynamicArraySynchronizedIteratorState(T),
-		) -> bool {
+		can_reset = proc(state: ^FixedDynamicArraySynchronizedIteratorState(T)) -> bool {
 			return true
 		},
-		reset = proc "contextless" (state: ^FixedDynamicArraySynchronizedIteratorState(T)) {
+		reset = proc(state: ^FixedDynamicArraySynchronizedIteratorState(T)) {
 			internal_reset(state)
 		},
 		state = {{-1}, it, fda.len(it^), auto_reset},
