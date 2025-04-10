@@ -3,6 +3,13 @@
 This is a small collection of code I wrote, that I think might
 be useful for others as well.
 
+**WARNING: I do not consider all parts of this stable or finished. Especially the iterator stuff needs some polish.**
+
+- _**What works:** The expression evaluator, the fixed dynamic array and the stack tracking allocator should be ready._
+- _**What works, but needs works:** The iterator stuff currently uses fixed size storage, making every iterator the same size. I haven't found a better way to handle that yet, so if thats okay, it should be good to go as well._
+- _**What probably works:** The opaque stuff should work as well, but as its quite low level, there might be hidden bugs that will be hard to track down. Use at your own risk._
+- _**What you shouldn't use:** Everything inside the experiments folder. Currently there is only the slice abuse, but that relies on implementation details and could break with every compiler update._
+
 - [Opaque](#opaque)
   - [Types](#types)
     - [OpaqueInline](#opaqueinline)
