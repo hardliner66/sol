@@ -64,21 +64,21 @@ main :: proc() {
 	log_alloc = mem.dynamic_arena_allocator(&pool)
 	context.logger = log.create_console_logger(allocator = log_alloc)
 
-	// when RUN_FDA_DEMO {
-	// 	run_showcase(showcase_fixed_dynamic_array, "Fixed Dynamic Array", &track)
-	// }
-	// when RUN_EE_DEMO {
-	// 	run_showcase(showcase_expression_evaluator, "Expression Evaluator", &track)
-	// }
-	// when RUN_ITER_DEMO {
-	// 	run_showcase(showcase_base_iter, "Base Iterator", &track)
-	// }
+	when RUN_FDA_DEMO {
+		run_showcase(showcase_fixed_dynamic_array, "Fixed Dynamic Array", &track)
+	}
+	when RUN_EE_DEMO {
+		run_showcase(showcase_expression_evaluator, "Expression Evaluator", &track)
+	}
+	when RUN_ITER_DEMO {
+		run_showcase(showcase_base_iter, "Base Iterator", &track)
+	}
 	when RUN_OPAQUE_DEMO {
 		run_showcase(showcase_opaque, "Opaque", &track)
 	}
-	// when RUN_STA_DEMO {
-	// 	run_showcase(showcase_stack_tracking_allocator, "Stack Tracking Allocator", &track)
-	// }
+	when RUN_STA_DEMO {
+		run_showcase(showcase_stack_tracking_allocator, "Stack Tracking Allocator", &track)
+	}
 
 	free_all(log_alloc)
 }
