@@ -21,7 +21,7 @@ when RUN_EE_DEMO {
 		operators := ee.make_default_operator_map()
 		defer delete(operators)
 
-		operators['^'] = proc(a: f32, b: f32) -> ee.EvalResult {return math.pow(a, b)}
+		operators['^'] = proc(a: f32, b: f32) -> ee.Eval_Result {return math.pow(a, b)}
 
 		variables := map[string]ee.Number {
 			"foo" = int(3),

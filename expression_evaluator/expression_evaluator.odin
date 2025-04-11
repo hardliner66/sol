@@ -10,13 +10,13 @@ NAN :: math.INF_F32 + math.NEG_INF_F32
 
 Operator :: rune
 
-PrecedenceMap :: map[Operator]int
-OperatorMap :: map[rune]OperatorFunction
+Precedence_Map :: map[Operator]int
+Operator_Map :: map[rune]Operator_Function
 
-VariableMap :: map[Identifier]Number
+Variable_Map :: map[Identifier]Number
 
-make_default_precedence_map :: proc(allocator := context.allocator) -> PrecedenceMap {
-	result := make(PrecedenceMap, allocator = allocator)
+make_default_precedence_map :: proc(allocator := context.allocator) -> Precedence_Map {
+	result := make(Precedence_Map, allocator = allocator)
 	result['+'] = 1
 	result['-'] = 1
 	result['*'] = 2
@@ -24,70 +24,70 @@ make_default_precedence_map :: proc(allocator := context.allocator) -> Precedenc
 	return result
 }
 
-VariableNotFound :: struct {
+Variable_Not_Found :: struct {
 	name: string,
 }
 
-OperatorError :: struct {
+Operator_Error :: struct {
 	operator: Operator,
 	err:      string,
 }
 
-UnexpectedToken :: struct {
+Unexpected_Token :: struct {
 	token: Token,
 }
 
-InvalidCharacter :: struct {
+Invalid_Character :: struct {
 	character: rune,
 }
 
-IncompleteExpression :: struct {
+Incomplete_Expression :: struct {
 }
 
-ParseError :: union {
-	InvalidCharacter,
-	IncompleteExpression,
+Parse_Error :: union {
+	Invalid_Character,
+	Incomplete_Expression,
 }
 
 when !DIVISION_BY_ZERO_RETURNS_ZERO {
-	DivisionByZero :: struct {
+	Division_By_Zero :: struct {
 	}
 }
 
-EvalError :: union {
-		OperatorError,
-		VariableNotFound,
-		UnexpectedToken,
+Eval_Error :: union {
+		Operator_Error,
+		Variable_Not_Found,
+		Unexpected_Token,
 	} when DIVISION_BY_ZERO_RETURNS_ZERO else union {
-		OperatorError,
-		VariableNotFound,
-		UnexpectedToken,
-		DivisionByZero,
+		Operator_Error,
+		Variable_Not_Found,
+		Unexpected_Token,
+		Division_By_Zero,
 	}
 
-EvalResult :: union {
+Eval_Result :: union {
 	f32,
-	EvalError,
+	Eval_Error,
 }
 
 Error :: union #shared_nil {
-	EvalError,
-	ParseError,
+	Eval_Error,
+	Parse_Error,
 }
 
-OperatorFunction :: proc(a: f32, b: f32) -> EvalResult
+Operator_Function :: #type proc(a: f32, b: f32) -> Eval_Result
 
-make_default_operator_map :: proc(allocator := context.allocator) -> OperatorMap {
-	result := make(OperatorMap, allocator = allocator)
-	result['+'] = proc(a: f32, b: f32) -> EvalResult {return a + b}
-	result['-'] = proc(a: f32, b: f32) -> EvalResult {return a - b}
-	result['*'] = proc(a: f32, b: f32) -> EvalResult {return a * b}
-	result['/'] = proc(a: f32, b: f32) -> EvalResult {
+make_default_operator_map :: proc(allocator := context.allocator) -> Operator_Map {
+	result := make(Operator_Map, allocator = allocator)
+	result['+'] = proc(a: f32, b: f32) -> Eval_Result {return a + b}
+	result['-'] = proc(a: f32, b: f32) -> Eval_Result {return a - b}
+	result['*'] = proc(a: f32, b: f32) -> Eval_Result {return a * b}
+	result['/'] = proc(a: f32, b: f32) -> Eval_Result {
 		if b == 0.0 {
 			if DIVISION_BY_ZERO_RETURNS_ZERO {
 				return f32(0.0)
 			} else {
-				return EvalError(OperatorError{'/', "Division by zero"})
+				return Eval_Error(Operator_Error{'/', "Division by zero"})
 			}
 		}
 		return a / b
@@ -198,7 +198,7 @@ lex :: proc(text: string, tokens: []Token, allocator := context.allocator) -> (e
 				i += 1
 				continue
 			}
-			err = ParseError(InvalidCharacter{rune(ch)})
+			err = Parse_Error(Invalid_Character{rune(ch)})
 			return
 		}
 	}
@@ -264,7 +264,7 @@ expect_token :: proc(p: ^Parser, expected: Token) -> Token {
 }
 
 @(private)
-parse_primary :: proc(p: ^Parser, eb: ^ExpressionBlock) -> (id: int, err: ParseError) {
+parse_primary :: proc(p: ^Parser, eb: ^Expression_Block) -> (id: int, err: Parse_Error) {
 	id = -1
 	if expect_token(p, Paren.Open) != nil {
 		id = parse_expr_with_precedence(p, eb, 0) or_return
@@ -286,7 +286,7 @@ parse_primary :: proc(p: ^Parser, eb: ^ExpressionBlock) -> (id: int, err: ParseE
 		eb.index += 1
 	}
 	if id == -1 {
-		err = IncompleteExpression{}
+		err = Incomplete_Expression{}
 	}
 	return
 }
@@ -294,11 +294,11 @@ parse_primary :: proc(p: ^Parser, eb: ^ExpressionBlock) -> (id: int, err: ParseE
 @(private)
 parse_expr_with_precedence :: proc(
 	p: ^Parser,
-	eb: ^ExpressionBlock,
+	eb: ^Expression_Block,
 	min_precedence: int,
 ) -> (
 	id: int,
-	err: ParseError,
+	err: Parse_Error,
 ) {
 	left := parse_primary(p, eb) or_return
 	for {
@@ -341,24 +341,24 @@ parse_expr_with_precedence :: proc(
 	return
 }
 
-destroy_expr :: proc(e: ExpressionBlock) {
+destroy_expr :: proc(e: Expression_Block) {
 	delete(e.expressions)
 }
 
-ExpressionBlock :: struct {
+Expression_Block :: struct {
 	start:       int,
 	index:       int,
 	expressions: []Expr,
 }
 
 @(private)
-TokenBlock :: struct {
+Token_Block :: struct {
 	index:       int,
 	expressions: []Expr,
 }
 
 @(private)
-TokenType :: enum {
+Token_Type :: enum {
 	None,
 	Number,
 	Identifier,
@@ -366,32 +366,32 @@ TokenType :: enum {
 
 @(private)
 count_tokens :: proc(input: string) -> int {
-	last_token_type := TokenType.None
+	last_token_type := Token_Type.None
 	token_count := 0
 	for c in input {
 		if c == '.' &&
-		   (last_token_type == TokenType.Number || last_token_type == TokenType.Identifier) {
+		   (last_token_type == Token_Type.Number || last_token_type == Token_Type.Identifier) {
 			continue
 		}
 
 		if unicode.is_space(c) {
-			last_token_type = TokenType.None
+			last_token_type = Token_Type.None
 		} else if unicode.is_digit(c) {
-			if last_token_type == TokenType.Identifier {
+			if last_token_type == Token_Type.Identifier {
 				continue
 			}
-			if last_token_type != TokenType.Number {
-				last_token_type = TokenType.Number
+			if last_token_type != Token_Type.Number {
+				last_token_type = Token_Type.Number
 				token_count += 1
 			}
 		} else if unicode.is_letter(c) || c == '_' {
-			if last_token_type != TokenType.Identifier {
-				last_token_type = TokenType.Identifier
+			if last_token_type != Token_Type.Identifier {
+				last_token_type = Token_Type.Identifier
 				token_count += 1
 			}
 		} else if unicode.is_symbol(c) || unicode.is_punct(c) {
 			token_count += 1
-			last_token_type = TokenType.None
+			last_token_type = Token_Type.None
 		}
 	}
 	return token_count
@@ -400,10 +400,10 @@ count_tokens :: proc(input: string) -> int {
 @(require_results)
 parse :: proc(
 	input: string,
-	precedence_map: Maybe(PrecedenceMap) = nil,
+	precedence_map: Maybe(Precedence_Map) = nil,
 	allocator := context.allocator,
 ) -> (
-	eb: ExpressionBlock,
+	eb: Expression_Block,
 	err: Error,
 ) {
 	pm := precedence_map.? or_else make_default_precedence_map()
@@ -455,12 +455,12 @@ value_to_float :: proc(n: Number) -> f32 {
 @(private)
 internal_eval_expr :: proc(
 	expr: Expr,
-	eb: ExpressionBlock,
-	operators: OperatorMap,
-	variables: Maybe(VariableMap),
+	eb: Expression_Block,
+	operators: Operator_Map,
+	variables: Maybe(Variable_Map),
 ) -> (
 	result: f32,
-	err: EvalError,
+	err: Eval_Error,
 ) #no_bounds_check {
 	defer if err != nil do result = NAN
 
@@ -468,9 +468,9 @@ internal_eval_expr :: proc(
 	case Literal:
 		result = value_to_float(e.value)
 	case Variable:
-		vars, ok := variables.(VariableMap)
+		vars, ok := variables.(Variable_Map)
 		if !ok {
-			err = VariableNotFound{e.name}
+			err = Variable_Not_Found{e.name}
 			return
 		}
 		v: Number
@@ -478,7 +478,7 @@ internal_eval_expr :: proc(
 			result = value_to_float(v)
 		} else {
 
-			err = VariableNotFound{e.name}
+			err = Variable_Not_Found{e.name}
 		}
 	case Binary:
 		left: f32
@@ -490,9 +490,9 @@ internal_eval_expr :: proc(
 			if result, ok = tmp.(f32); ok {
 				return
 			}
-			err = tmp.(EvalError)
+			err = tmp.(Eval_Error)
 		} else {
-			err = UnexpectedToken{Operator(e.op)}
+			err = Unexpected_Token{Operator(e.op)}
 		}
 	}
 	return
@@ -500,9 +500,9 @@ internal_eval_expr :: proc(
 
 @(require_results)
 eval_expr :: proc(
-	eb: ExpressionBlock,
-	variables: Maybe(VariableMap) = nil,
-	operators: Maybe(OperatorMap) = nil,
+	eb: Expression_Block,
+	variables: Maybe(Variable_Map) = nil,
+	operators: Maybe(Operator_Map) = nil,
 	allocator := context.allocator,
 ) -> (
 	result: f32,
@@ -516,9 +516,9 @@ eval_expr :: proc(
 @(require_results)
 eval :: proc(
 	text: string,
-	variables: Maybe(VariableMap) = nil,
-	operators: Maybe(OperatorMap) = nil,
-	precedence_map: Maybe(PrecedenceMap) = nil,
+	variables: Maybe(Variable_Map) = nil,
+	operators: Maybe(Operator_Map) = nil,
+	precedence_map: Maybe(Precedence_Map) = nil,
 	allocator := context.allocator,
 ) -> (
 	f: f32,

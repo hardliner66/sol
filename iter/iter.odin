@@ -4,7 +4,7 @@ package iter_base
 
 MAX_ITERATOR_SIZE :: #config(MAX_ITERATOR_SIZE, 256)
 
-BaseState :: struct {
+Base_State :: struct {
 	index: int,
 }
 
@@ -16,16 +16,16 @@ Iterator :: struct($T: typeid) {
 	get_item:  proc(state: ^Iterator(T)) -> ^T,
 	can_reset: proc(state: ^Iterator(T)) -> bool,
 	reset:     proc(state: ^Iterator(T)),
-	inner:     op.OpaqueInline(MAX_ITERATOR_SIZE),
+	inner:     op.Opaque(MAX_ITERATOR_SIZE),
 }
 
-IteratorInterface :: struct($State: typeid, $T: typeid) {
+Iterator_Interface :: struct($State: typeid, $T: typeid) {
 	/// OPTIONAL
 	/// Retrieves the current index of the iterator
 	/// This gets returned to the user when calling next_val or next_ref
 	/// so it can be used as an index in the for loop
 	/// DEFAULT: returns the index from the base state
-	get_index: proc(state: ^BaseState) -> int,
+	get_index: proc(state: ^Base_State) -> int,
 	/// OPTIONAL
 	/// Checks if the iterator is dead.
 	/// An iterator is considered dead, when it has been determined that
@@ -54,25 +54,25 @@ IteratorInterface :: struct($State: typeid, $T: typeid) {
 	reset:     proc(state: ^State),
 }
 
-TypedIterator :: struct($State: typeid, $T: typeid) {
-	using interface: IteratorInterface(State, T),
+Typed_Iterator :: struct($State: typeid, $T: typeid) {
+	using interface: Iterator_Interface(State, T),
 	state:           State,
 }
 
-state :: proc "contextless" (it: ^Iterator($T), $S: typeid) -> ^S {
-	it := op.get_ptr(&it.inner, TypedIterator(S, T))
+state :: proc(it: ^Iterator($T), $S: typeid) -> ^S {
+	it := op.get_ptr(&it.inner, Typed_Iterator(S, T))
 	return &it.state
 }
 
-from_untyped :: proc(opaque: Iterator($T), $S: typeid) -> TypedIterator(S, T) {
-	return op.get_value(it.inner, TypedIterator(S, T))
+from_untyped :: proc(opaque: Iterator($T), $S: typeid) -> Typed_Iterator(S, T) {
+	return op.get_value(it.inner, Typed_Iterator(S, T))
 }
 
-make_iterator :: proc(it: $I/TypedIterator($S, $T)) -> Iterator(T) {
+make_iterator :: proc(it: $I/Typed_Iterator($S, $T)) -> Iterator(T) {
 	return erase_type(validate_iterator(it))
 }
 
-erase_type :: proc(it: $I/TypedIterator($S, $T)) -> Iterator(T) {
+erase_type :: proc(it: $I/Typed_Iterator($S, $T)) -> Iterator(T) {
 	opaque := Iterator(T) {
 		get_index = proc(it: ^Iterator(T)) -> int {
 			it := op.get_ptr(&it.inner, I)
@@ -110,13 +110,13 @@ erase_type :: proc(it: $I/TypedIterator($S, $T)) -> Iterator(T) {
 }
 
 @(private)
-validate_iterator :: proc(it: $I/TypedIterator($S, $T)) -> I {
+validate_iterator :: proc(it: $I/Typed_Iterator($S, $T)) -> I {
 	it := it
 	assert(it.update != nil, "update must be set")
 	assert(it.is_valid != nil, "valid must be set")
 	assert(it.get_item != nil, "get_item must be set")
 	if it.get_index == nil {
-		it.get_index = proc(state: ^BaseState) -> int {
+		it.get_index = proc(state: ^Base_State) -> int {
 			return state.index
 		}
 	}

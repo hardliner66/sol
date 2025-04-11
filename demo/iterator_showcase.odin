@@ -3,29 +3,29 @@ package demo
 import ba "../iter"
 
 when RUN_ITER_DEMO {
-	CountingState :: struct {
-		using base:     ba.BaseState,
+	Counting_State :: struct {
+		using base:     ba.Base_State,
 		count:          int,
 		original_count: int,
 		tmp:            int,
 	}
-	CountingIterator :: ba.TypedIterator(CountingState, int)
+	CountingIterator :: ba.Typed_Iterator(Counting_State, int)
 
 	make_counting_iter :: proc(count: int) -> ba.Iterator(int) {
-		update :: proc(state: ^CountingState) {
+		update :: proc(state: ^Counting_State) {
 			state.index += 1
 		}
-		get_item :: proc(state: ^CountingState) -> ^int {
+		get_item :: proc(state: ^Counting_State) -> ^int {
 			state.tmp = state.index
 			return &state.tmp
 		}
-		is_valid :: proc(state: ^CountingState) -> bool {
+		is_valid :: proc(state: ^Counting_State) -> bool {
 			return state.index < state.count
 		}
-		can_reset :: proc(state: ^CountingState) -> bool {
+		can_reset :: proc(state: ^Counting_State) -> bool {
 			return true
 		}
-		reset :: proc(state: ^CountingState) {
+		reset :: proc(state: ^Counting_State) {
 			state.index = -1
 			state.count = state.original_count
 		}
@@ -37,7 +37,7 @@ when RUN_ITER_DEMO {
 				is_valid = is_valid,
 				can_reset = can_reset,
 				reset = reset,
-				state = CountingState{{-1}, count, count, 0},
+				state = {{-1}, count, count, 0},
 			},
 		)
 	}

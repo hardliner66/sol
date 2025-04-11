@@ -6,25 +6,25 @@ import "core:log"
 import "core:mem"
 
 when RUN_OPAQUE_DEMO {
-	SomeType :: struct {
+	Some_Type :: struct {
 		a: int,
 		b: f32,
 	}
 
-	inline_opaque_showcase :: proc() {
-		original_value := SomeType {
+	opaque_inline_showcase :: proc() {
+		original_value := Some_Type {
 			a = 42,
 			b = 3.14,
 		}
 		o_ptr := &original_value
 		opaque := op.make_opaque(original_value)
-		new := op.get_value(opaque, SomeType)
+		new := op.get_value(opaque, Some_Type)
 		new_ptr := &new
-		old_bytes := mem.ptr_to_bytes(o_ptr, size_of(SomeType))
-		opaque_bytes := mem.ptr_to_bytes(&opaque.data, size_of(SomeType))
-		new_bytes := mem.ptr_to_bytes(new_ptr, size_of(SomeType))
+		old_bytes := mem.ptr_to_bytes(o_ptr, size_of(Some_Type))
+		opaque_bytes := mem.ptr_to_bytes(&opaque.data, size_of(Some_Type))
+		new_bytes := mem.ptr_to_bytes(new_ptr, size_of(Some_Type))
 		log.debugf("original: %p, opaque: %p, new: %p", o_ptr, &opaque.data, new_ptr)
-		for i in 0 ..< size_of(SomeType) {
+		for i in 0 ..< size_of(Some_Type) {
 			log.debugf(
 				"original: %d, opaque: %d, new: %d",
 				old_bytes[i],
@@ -34,8 +34,8 @@ when RUN_OPAQUE_DEMO {
 		}
 	}
 
-	boxed_opaque_showcase :: proc() {
-		original_value := SomeType {
+	opaque_boxed_showcase :: proc() {
+		original_value := Some_Type {
 			a = 42,
 			b = 3.14,
 		}
@@ -44,13 +44,132 @@ when RUN_OPAQUE_DEMO {
 		assert(err == nil)
 		defer op.destroy_boxed_opaque(&opaque)
 
-		new := op.get_value(opaque, SomeType)
+		new := op.get_value(opaque, Some_Type)
 		new_ptr := &new
-		old_bytes := mem.ptr_to_bytes(o_ptr, size_of(SomeType))
-		opaque_bytes := mem.ptr_to_bytes(raw_data(opaque.data), size_of(SomeType))
-		new_bytes := mem.ptr_to_bytes(new_ptr, size_of(SomeType))
+		old_bytes := mem.ptr_to_bytes(o_ptr, size_of(Some_Type))
+		opaque_bytes := mem.ptr_to_bytes(raw_data(opaque.data), size_of(Some_Type))
+		new_bytes := mem.ptr_to_bytes(new_ptr, size_of(Some_Type))
 		log.debugf("original: %p, opaque: %p, new: %p", o_ptr, &opaque.data, new_ptr)
-		for i in 0 ..< size_of(SomeType) {
+		for i in 0 ..< size_of(Some_Type) {
+			log.debugf(
+				"original: %d, opaque: %d, new: %d",
+				old_bytes[i],
+				opaque_bytes[i],
+				new_bytes[i],
+			)
+		}
+	}
+
+	opaque_ptr_showcase :: proc() {
+		original_value := Some_Type {
+			a = 42,
+			b = 3.14,
+		}
+		o_ptr := &original_value
+		opaque := op.make_opaque_ptr(&original_value)
+
+		new := op.get_value(opaque, Some_Type)
+		new_ptr := &new
+		old_bytes := mem.ptr_to_bytes(o_ptr)
+		opaque_bytes := mem.ptr_to_bytes(op.get_ptr(opaque, Some_Type))
+		new_bytes := mem.ptr_to_bytes(new_ptr)
+		log.debugf(
+			"original: %p, opaque: %p, new: %p",
+			o_ptr,
+			op.get_ptr(opaque, Some_Type),
+			new_ptr,
+		)
+		for i in 0 ..< size_of(Some_Type) {
+			log.debugf(
+				"original: %d, opaque: %d, new: %d",
+				old_bytes[i],
+				opaque_bytes[i],
+				new_bytes[i],
+			)
+		}
+	}
+
+	union_opaque_inline_showcase :: proc() {
+		original_value := Some_Type {
+			a = 42,
+			b = 3.14,
+		}
+		o_ptr := &original_value
+		opaque: op.Opaque(size_of(Some_Type)) = op.make_opaque(original_value)
+		new := op.get_value(opaque, Some_Type)
+		new_ptr := &new
+		old_bytes := mem.ptr_to_bytes(o_ptr)
+		opaque_bytes := mem.ptr_to_bytes(op.get_ptr(&opaque, Some_Type))
+		new_bytes := mem.ptr_to_bytes(new_ptr)
+		log.debugf(
+			"original: %p, opaque: %p, new: %p",
+			o_ptr,
+			op.get_ptr(&opaque, Some_Type),
+			new_ptr,
+		)
+		for i in 0 ..< size_of(Some_Type) {
+			log.debugf(
+				"original: %d, opaque: %d, new: %d",
+				old_bytes[i],
+				opaque_bytes[i],
+				new_bytes[i],
+			)
+		}
+	}
+
+	union_opaque_boxed_showcase :: proc() {
+		original_value := Some_Type {
+			a = 42,
+			b = 3.14,
+		}
+		o_ptr := &original_value
+		o, err := op.make_opaque_boxed(original_value)
+		assert(err == nil)
+		defer op.destroy_boxed_opaque(&o)
+
+		opaque: op.Opaque(size_of(Some_Type)) = o
+
+		new := op.get_value(opaque, Some_Type)
+		new_ptr := &new
+		old_bytes := mem.ptr_to_bytes(o_ptr)
+		opaque_bytes := mem.ptr_to_bytes(op.get_ptr(&opaque, Some_Type))
+		new_bytes := mem.ptr_to_bytes(new_ptr)
+		log.debugf(
+			"original: %p, opaque: %p, new: %p",
+			o_ptr,
+			op.get_ptr(&opaque, Some_Type),
+			new_ptr,
+		)
+		for i in 0 ..< size_of(Some_Type) {
+			log.debugf(
+				"original: %d, opaque: %d, new: %d",
+				old_bytes[i],
+				opaque_bytes[i],
+				new_bytes[i],
+			)
+		}
+	}
+
+	union_opaque_ptr_showcase :: proc() {
+		original_value := Some_Type {
+			a = 42,
+			b = 3.14,
+		}
+		o_ptr := &original_value
+		opaque: op.Opaque(size_of(Some_Type)) = op.make_opaque_ptr(&original_value)
+
+		new := op.get_value(opaque, Some_Type)
+		new_ptr := &new
+		old_bytes := mem.ptr_to_bytes(o_ptr)
+		opaque_bytes := mem.ptr_to_bytes(op.get_ptr(&opaque, Some_Type))
+		new_bytes := mem.ptr_to_bytes(new_ptr)
+		log.debugf(
+			"original: %p, opaque: %p, new: %p",
+			o_ptr,
+			op.get_ptr(&opaque, Some_Type),
+			new_ptr,
+		)
+		for i in 0 ..< size_of(Some_Type) {
 			log.debugf(
 				"original: %d, opaque: %d, new: %d",
 				old_bytes[i],
@@ -61,7 +180,11 @@ when RUN_OPAQUE_DEMO {
 	}
 
 	showcase_opaque :: proc() {
-		inline_opaque_showcase()
-		boxed_opaque_showcase()
+		opaque_inline_showcase()
+		opaque_boxed_showcase()
+		opaque_ptr_showcase()
+		union_opaque_inline_showcase()
+		union_opaque_boxed_showcase()
+		union_opaque_ptr_showcase()
 	}
 }

@@ -5,61 +5,65 @@ import "base:builtin"
 @(require) import "base:runtime"
 @(require) import "core:mem"
 
-FixedDynamicArray :: struct($T: typeid) {
+Fixed_Dynamic_Array :: struct($T: typeid) {
 	data: []T,
 	len:  int,
 }
 
-create :: proc($T: typeid, capacity: int, allocator := context.allocator) -> FixedDynamicArray(T) {
+create :: proc(
+	$T: typeid,
+	capacity: int,
+	allocator := context.allocator,
+) -> Fixed_Dynamic_Array(T) {
 	return {make([]T, capacity, allocator = allocator), 0}
 }
 
-destroy :: proc(arr: ^FixedDynamicArray($T)) {
+destroy :: proc(arr: ^Fixed_Dynamic_Array($T)) {
 	delete(arr.data)
 }
 
-len :: proc "contextless" (a: $A/FixedDynamicArray) -> int {
+len :: proc "contextless" (a: $A/Fixed_Dynamic_Array) -> int {
 	return a.len
 }
 
-cap :: proc "contextless" (a: $A/FixedDynamicArray) -> int {
+cap :: proc "contextless" (a: $A/Fixed_Dynamic_Array) -> int {
 	return builtin.len(a.data)
 }
 
-space :: proc "contextless" (a: $A/FixedDynamicArray) -> int {
+space :: proc "contextless" (a: $A/Fixed_Dynamic_Array) -> int {
 	return builtin.len(a.data) - a.len
 }
 
-slice :: proc "contextless" (a: ^$A/FixedDynamicArray($T)) -> []T {
+slice :: proc "contextless" (a: ^$A/Fixed_Dynamic_Array($T)) -> []T {
 	return a.data[:a.len]
 }
 
-get :: proc "contextless" (a: $A/FixedDynamicArray($T), index: int) -> T {
+get :: proc "contextless" (a: $A/Fixed_Dynamic_Array($T), index: int) -> T {
 	return a.data[index]
 }
-get_ptr :: proc "contextless" (a: ^$A/FixedDynamicArray($T), index: int) -> ^T {
+get_ptr :: proc "contextless" (a: ^$A/Fixed_Dynamic_Array($T), index: int) -> ^T {
 	return &a.data[index]
 }
 
-get_safe :: proc(a: $A/FixedDynamicArray($T), index: int) -> (T, bool) #no_bounds_check {
+get_safe :: proc(a: $A/Fixed_Dynamic_Array($T), index: int) -> (T, bool) #no_bounds_check {
 	if index < 0 || index >= a.len {
 		return {}, false
 	}
 	return a.data[index], true
 }
 
-get_ptr_safe :: proc(a: ^$A/FixedDynamicArray($T), index: int) -> (^T, bool) #no_bounds_check {
+get_ptr_safe :: proc(a: ^$A/Fixed_Dynamic_Array($T), index: int) -> (^T, bool) #no_bounds_check {
 	if index < 0 || index >= a.len {
 		return {}, false
 	}
 	return &a.data[index], true
 }
 
-set :: proc "contextless" (a: ^$A/FixedDynamicArray($T), index: int, item: T) {
+set :: proc "contextless" (a: ^$A/Fixed_Dynamic_Array($T), index: int, item: T) {
 	a.data[index] = item
 }
 
-push_back :: proc "contextless" (a: ^$A/FixedDynamicArray($T), item: T) -> bool {
+push_back :: proc "contextless" (a: ^$A/Fixed_Dynamic_Array($T), item: T) -> bool {
 	if a.len < cap(a^) {
 		a.data[a.len] = item
 		a.len += 1
@@ -68,7 +72,7 @@ push_back :: proc "contextless" (a: ^$A/FixedDynamicArray($T), item: T) -> bool 
 	return false
 }
 
-push_front :: proc "contextless" (a: ^$A/FixedDynamicArray($T), item: T) -> bool {
+push_front :: proc "contextless" (a: ^$A/Fixed_Dynamic_Array($T), item: T) -> bool {
 	if a.len < cap(a^) {
 		a.len += 1
 		data := slice(a)
@@ -79,14 +83,14 @@ push_front :: proc "contextless" (a: ^$A/FixedDynamicArray($T), item: T) -> bool
 	return false
 }
 
-pop_back :: proc "odin" (a: ^$A/FixedDynamicArray($T), loc := #caller_location) -> T {
+pop_back :: proc "odin" (a: ^$A/Fixed_Dynamic_Array($T), loc := #caller_location) -> T {
 	assert(condition = (a.len > 0), loc = loc)
 	item := a.data[a.len - 1]
 	a.len -= 1
 	return item
 }
 
-pop_front :: proc "odin" (a: ^$A/FixedDynamicArray($T), loc := #caller_location) -> T {
+pop_front :: proc "odin" (a: ^$A/Fixed_Dynamic_Array($T), loc := #caller_location) -> T {
 	assert(condition = (a.len > 0), loc = loc)
 	item := a.data[0]
 	s := slice(a)
@@ -95,7 +99,7 @@ pop_front :: proc "odin" (a: ^$A/FixedDynamicArray($T), loc := #caller_location)
 	return item
 }
 
-pop_back_safe :: proc "contextless" (a: ^$A/FixedDynamicArray($T)) -> (item: T, ok: bool) {
+pop_back_safe :: proc "contextless" (a: ^$A/Fixed_Dynamic_Array($T)) -> (item: T, ok: bool) {
 	if a.len > 0 {
 		item = a.data[a.len - 1]
 		a.len -= 1
@@ -104,7 +108,7 @@ pop_back_safe :: proc "contextless" (a: ^$A/FixedDynamicArray($T)) -> (item: T, 
 	return
 }
 
-pop_front_safe :: proc "contextless" (a: ^$A/FixedDynamicArray($T)) -> (item: T, ok: bool) {
+pop_front_safe :: proc "contextless" (a: ^$A/Fixed_Dynamic_Array($T)) -> (item: T, ok: bool) {
 	if a.len > 0 {
 		item = a.data[0]
 		s := slice(a)
@@ -116,7 +120,7 @@ pop_front_safe :: proc "contextless" (a: ^$A/FixedDynamicArray($T)) -> (item: T,
 }
 
 ordered_remove_index :: proc "contextless" (
-	a: ^$A/FixedDynamicArray($T),
+	a: ^$A/Fixed_Dynamic_Array($T),
 	index: int,
 	loc := #caller_location,
 ) #no_bounds_check {
@@ -128,7 +132,7 @@ ordered_remove_index :: proc "contextless" (
 }
 
 ordered_remove_ptr :: proc "contextless" (
-	a: ^$A/FixedDynamicArray($T),
+	a: ^$A/Fixed_Dynamic_Array($T),
 	ptr: ^T,
 	loc := #caller_location,
 ) #no_bounds_check {
@@ -136,7 +140,7 @@ ordered_remove_ptr :: proc "contextless" (
 }
 
 unordered_remove_index :: proc "contextless" (
-	a: ^$A/FixedDynamicArray($T),
+	a: ^$A/Fixed_Dynamic_Array($T),
 	index: int,
 	loc := #caller_location,
 ) #no_bounds_check {
@@ -150,18 +154,18 @@ unordered_remove_index :: proc "contextless" (
 }
 
 unordered_remove_ptr :: proc "contextless" (
-	a: ^$A/FixedDynamicArray($T),
+	a: ^$A/Fixed_Dynamic_Array($T),
 	ptr: ^T,
 	loc := #caller_location,
 ) #no_bounds_check {
 	unordered_remove_index(a, index_from_ptr(a, ptr), loc)
 }
 
-clear :: proc "contextless" (a: ^$A/FixedDynamicArray($T)) {
+clear :: proc "contextless" (a: ^$A/Fixed_Dynamic_Array($T)) {
 	a.len = 0
 }
 
-push_back_elems :: proc "contextless" (a: ^$A/FixedDynamicArray($T), items: ..T) -> bool {
+push_back_elems :: proc "contextless" (a: ^$A/Fixed_Dynamic_Array($T), items: ..T) -> bool {
 	if a.len + builtin.len(items) <= cap(a^) {
 		n := copy(a.data[a.len:], items[:])
 		a.len += n
@@ -171,7 +175,7 @@ push_back_elems :: proc "contextless" (a: ^$A/FixedDynamicArray($T), items: ..T)
 }
 
 inject_at :: proc "contextless" (
-	a: ^$A/FixedDynamicArray($T),
+	a: ^$A/Fixed_Dynamic_Array($T),
 	item: T,
 	index: int,
 ) -> bool #no_bounds_check {
@@ -187,7 +191,7 @@ inject_at :: proc "contextless" (
 }
 
 @(private)
-index_from_ptr :: proc "contextless" (a: ^$A/FixedDynamicArray($T), ptr: ^T) -> int {
+index_from_ptr :: proc "contextless" (a: ^$A/Fixed_Dynamic_Array($T), ptr: ^T) -> int {
 	return mem.ptr_sub(ptr, &a.data[0])
 }
 

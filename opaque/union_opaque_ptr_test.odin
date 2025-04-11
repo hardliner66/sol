@@ -3,7 +3,7 @@ package opaque
 import "core:testing"
 
 @(test)
-ptr_test_opaque_ptr_basic :: proc(t: ^testing.T) {
+union_ptr_test_opaque_ptr_basic :: proc(t: ^testing.T) {
 	Pointer_Type :: struct {
 		ptr: ^int,
 	}
@@ -12,8 +12,8 @@ ptr_test_opaque_ptr_basic :: proc(t: ^testing.T) {
 		ptr = &value,
 	}
 
-	opaque_ptr := make_opaque_ptr(pointer_value.ptr)
-	new_ptr := from_opaque_ptr(opaque_ptr, int)
+	opaque_ptr: Opaque(0) = make_opaque_ptr(pointer_value.ptr)
+	new_ptr := get_ptr(&opaque_ptr, int)
 
 	testing.expect(t, pointer_value.ptr == new_ptr, "Expected pointers to match")
 	testing.expect(
@@ -24,7 +24,7 @@ ptr_test_opaque_ptr_basic :: proc(t: ^testing.T) {
 }
 
 @(test)
-ptr_test_opaque_ptr_nested :: proc(t: ^testing.T) {
+union_ptr_test_opaque_ptr_nested :: proc(t: ^testing.T) {
 	Nested_Pointer_Type :: struct {
 		ptr: ^^int,
 	}
@@ -34,8 +34,8 @@ ptr_test_opaque_ptr_nested :: proc(t: ^testing.T) {
 		ptr = &value_ptr,
 	}
 
-	opaque_ptr := make_opaque_ptr(nested_pointer_value.ptr)
-	new_ptr := from_opaque_ptr(opaque_ptr, ^int)
+	opaque_ptr: Opaque(0) = make_opaque_ptr(nested_pointer_value.ptr)
+	new_ptr := get_ptr(&opaque_ptr, ^int)
 
 	testing.expect(t, nested_pointer_value.ptr == new_ptr, "Expected nested pointers to match")
 	testing.expect(
@@ -46,7 +46,7 @@ ptr_test_opaque_ptr_nested :: proc(t: ^testing.T) {
 }
 
 @(test)
-ptr_test_opaque_ptr_invalid_cast :: proc(t: ^testing.T) {
+union_ptr_test_opaque_ptr_invalid_cast :: proc(t: ^testing.T) {
 	Pointer_Type :: struct {
 		ptr: ^int,
 	}
@@ -59,8 +59,8 @@ ptr_test_opaque_ptr_invalid_cast :: proc(t: ^testing.T) {
 		ptr = &value,
 	}
 
-	opaque_ptr := make_opaque_ptr(pointer_value.ptr)
+	opaque_ptr: Opaque(0) = make_opaque_ptr(pointer_value.ptr)
 
-	_, ok := from_opaque_ptr_safe(opaque_ptr, f32) // This should return false
+	_, ok := get_ptr_safe(&opaque_ptr, f32) // This should return false
 	testing.expect(t, !ok, "Expected nok on invalid pointer cast")
 }

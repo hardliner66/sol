@@ -45,7 +45,7 @@ when RUN_FDA_DEMO {
 
 		i := 0
 		it := fda_iter.make_sync_iter(&array)
-		for item, index in fda_iter.next_ref(&it) {
+		for item, index in fda_iter.next_val(&it) {
 			info("Index: %v, Value: %v", index, item)
 
 			// remove every third item
@@ -79,7 +79,7 @@ when RUN_FDA_DEMO {
 			fda_iter.pop_back_safe(&it)
 			fda_iter.ordered_remove(&it, i)
 			fda_iter.unordered_remove(&it, i)
-			state := ba.state(&it, fda_iter.FixedDynamicArraySynchronizedIteratorState(int))
+			state := ba.state(&it, fda_iter.Fixed_Dynamic_Array_Synchronized_Iterator_State(int))
 			fda_iter.ordered_remove(&it, fda.get_ptr(state.array, 0))
 			fda_iter.unordered_remove(&it, fda.get_ptr(state.array, 0))
 			break

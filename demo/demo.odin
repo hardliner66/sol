@@ -8,8 +8,6 @@ RUN_ITER_DEMO :: #config(RUN_ITER_DEMO, true)
 RUN_OPAQUE_DEMO :: #config(RUN_OPAQUE_DEMO, true)
 RUN_STA_DEMO :: #config(RUN_STA_DEMO, true)
 
-USE_BASE_ITER :: #config(USE_BASE_ITER, false)
-
 import "core:fmt"
 import "core:log"
 import "core:mem"
