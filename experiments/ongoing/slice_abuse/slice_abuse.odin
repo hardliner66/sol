@@ -1,7 +1,7 @@
 package iter_abuse
 
 import "base:runtime"
-import "core:log"
+import "core:fmt"
 import "core:mem"
 
 Update_Proc :: #type proc(slice: ^Base_Slice)
@@ -100,8 +100,6 @@ counting_iter :: proc(count: int) -> My_Slice {
 }
 
 main :: proc() {
-	context.logger = log.create_console_logger()
-
 	// create the slice based iterator
 	state := counting_iter(10)
 
@@ -110,6 +108,6 @@ main :: proc() {
 		if v == 5 {
 			v += 10
 		}
-		log.info(v)
+		fmt.println(v)
 	}
 }

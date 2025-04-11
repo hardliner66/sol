@@ -1,12 +1,12 @@
 package demo
 
-import "core:log"
+import "core:fmt"
 import "core:mem"
 
 log_alloc: mem.Allocator
 
 // helper to be able to log while panic allocator is active
-info :: proc(fmt_str: string, args: ..any, location := #caller_location) {
+info :: proc(fmt_str: string, args: ..any) {
 	old_alloc := context.allocator
 	defer context.allocator = old_alloc
 
@@ -16,5 +16,5 @@ info :: proc(fmt_str: string, args: ..any, location := #caller_location) {
 	context.allocator = log_alloc
 	context.temp_allocator = log_alloc
 
-	log.infof(fmt_str, ..args, location = location)
+	fmt.printfln(fmt_str, ..args)
 }

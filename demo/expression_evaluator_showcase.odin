@@ -4,7 +4,7 @@ package demo
 
 import ee "../expression_evaluator"
 
-import "core:log"
+import "core:fmt"
 import "core:math"
 
 when RUN_EE_DEMO {
@@ -33,6 +33,6 @@ when RUN_EE_DEMO {
 
 		assert(e == nil)
 
-		log.info("Result:", f)
+		fmt.println("Result:", f)
 	}
 }

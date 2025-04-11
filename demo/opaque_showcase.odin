@@ -2,7 +2,7 @@ package demo
 
 import op "../opaque"
 
-import "core:log"
+import "core:fmt"
 import "core:mem"
 
 when RUN_OPAQUE_DEMO {
@@ -23,9 +23,9 @@ when RUN_OPAQUE_DEMO {
 		old_bytes := mem.ptr_to_bytes(o_ptr, size_of(Some_Type))
 		opaque_bytes := mem.ptr_to_bytes(&opaque.data, size_of(Some_Type))
 		new_bytes := mem.ptr_to_bytes(new_ptr, size_of(Some_Type))
-		log.debugf("original: %p, opaque: %p, new: %p", o_ptr, &opaque.data, new_ptr)
+		fmt.printfln("original: %p, opaque: %p, new: %p", o_ptr, &opaque.data, new_ptr)
 		for i in 0 ..< size_of(Some_Type) {
-			log.debugf(
+			fmt.printfln(
 				"original: %d, opaque: %d, new: %d",
 				old_bytes[i],
 				opaque_bytes[i],
@@ -49,9 +49,9 @@ when RUN_OPAQUE_DEMO {
 		old_bytes := mem.ptr_to_bytes(o_ptr, size_of(Some_Type))
 		opaque_bytes := mem.ptr_to_bytes(raw_data(opaque.data), size_of(Some_Type))
 		new_bytes := mem.ptr_to_bytes(new_ptr, size_of(Some_Type))
-		log.debugf("original: %p, opaque: %p, new: %p", o_ptr, &opaque.data, new_ptr)
+		fmt.printfln("original: %p, opaque: %p, new: %p", o_ptr, &opaque.data, new_ptr)
 		for i in 0 ..< size_of(Some_Type) {
-			log.debugf(
+			fmt.printfln(
 				"original: %d, opaque: %d, new: %d",
 				old_bytes[i],
 				opaque_bytes[i],
@@ -73,14 +73,14 @@ when RUN_OPAQUE_DEMO {
 		old_bytes := mem.ptr_to_bytes(o_ptr)
 		opaque_bytes := mem.ptr_to_bytes(op.get_ptr(opaque, Some_Type))
 		new_bytes := mem.ptr_to_bytes(new_ptr)
-		log.debugf(
+		fmt.printfln(
 			"original: %p, opaque: %p, new: %p",
 			o_ptr,
 			op.get_ptr(opaque, Some_Type),
 			new_ptr,
 		)
 		for i in 0 ..< size_of(Some_Type) {
-			log.debugf(
+			fmt.printfln(
 				"original: %d, opaque: %d, new: %d",
 				old_bytes[i],
 				opaque_bytes[i],
@@ -101,14 +101,14 @@ when RUN_OPAQUE_DEMO {
 		old_bytes := mem.ptr_to_bytes(o_ptr)
 		opaque_bytes := mem.ptr_to_bytes(op.get_ptr(&opaque, Some_Type))
 		new_bytes := mem.ptr_to_bytes(new_ptr)
-		log.debugf(
+		fmt.printfln(
 			"original: %p, opaque: %p, new: %p",
 			o_ptr,
 			op.get_ptr(&opaque, Some_Type),
 			new_ptr,
 		)
 		for i in 0 ..< size_of(Some_Type) {
-			log.debugf(
+			fmt.printfln(
 				"original: %d, opaque: %d, new: %d",
 				old_bytes[i],
 				opaque_bytes[i],
@@ -134,14 +134,14 @@ when RUN_OPAQUE_DEMO {
 		old_bytes := mem.ptr_to_bytes(o_ptr)
 		opaque_bytes := mem.ptr_to_bytes(op.get_ptr(&opaque, Some_Type))
 		new_bytes := mem.ptr_to_bytes(new_ptr)
-		log.debugf(
+		fmt.printfln(
 			"original: %p, opaque: %p, new: %p",
 			o_ptr,
 			op.get_ptr(&opaque, Some_Type),
 			new_ptr,
 		)
 		for i in 0 ..< size_of(Some_Type) {
-			log.debugf(
+			fmt.printfln(
 				"original: %d, opaque: %d, new: %d",
 				old_bytes[i],
 				opaque_bytes[i],
@@ -163,14 +163,14 @@ when RUN_OPAQUE_DEMO {
 		old_bytes := mem.ptr_to_bytes(o_ptr)
 		opaque_bytes := mem.ptr_to_bytes(op.get_ptr(&opaque, Some_Type))
 		new_bytes := mem.ptr_to_bytes(new_ptr)
-		log.debugf(
+		fmt.printfln(
 			"original: %p, opaque: %p, new: %p",
 			o_ptr,
 			op.get_ptr(&opaque, Some_Type),
 			new_ptr,
 		)
 		for i in 0 ..< size_of(Some_Type) {
-			log.debugf(
+			fmt.printfln(
 				"original: %d, opaque: %d, new: %d",
 				old_bytes[i],
 				opaque_bytes[i],

@@ -21,32 +21,30 @@ next_val :: ba.next_val
 reset :: ba.reset
 
 unordered_remove_index :: proc(
-	it: ^$I/ba.Iterator($T),
+	it: ^$I/ba.Typed_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State($T), T),
 	index: int,
 	loc := #caller_location,
 ) #no_bounds_check {
-	state := ba.state(it, Fixed_Dynamic_Array_Synchronized_Iterator_State(T))
-	fda.unordered_remove(state.array, index, loc)
-	if index < state.index {
+	fda.unordered_remove(it.state.array, index, loc)
+	if index < it.state.index {
 		// swap the currently processed item with the item at the index
 		// this is safe, because unordered_remove swaps the item at the last valid index
 		// with the deleted item
-		state.array.data[state.index] = state.array.data[index]
+		it.state.array.data[it.state.index] = it.state.array.data[index]
 	}
 	// don't update expected_len, so the iterator knows that the array has been modified
 }
 
 ordered_remove_index :: proc(
-	it: ^$I/ba.Iterator($T),
+	it: ^$I/ba.Typed_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State($T), T),
 	index: int,
 	loc := #caller_location,
 ) #no_bounds_check {
-	state := ba.state(it, Fixed_Dynamic_Array_Synchronized_Iterator_State(T))
-	fda.ordered_remove(state.array, index, loc)
-	if index > state.index {
+	fda.ordered_remove(it.state.array, index, loc)
+	if index > it.state.index {
 		// if the index is greater than the current index, we need to decrement the expected length
 		// so the iterator will properly increment its index when called the next time
-		state.expected_len -= 1
+		it.state.expected_len -= 1
 	}
 	// because ordered_remove keeps the order by copying every item after the deleted one
 	// to the the position of the deleted item, thus keeping the order of the array
@@ -55,7 +53,7 @@ ordered_remove_index :: proc(
 }
 
 unordered_remove_ptr :: proc(
-	it: ^$I/ba.Iterator($T),
+	it: ^$I/ba.Typed_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State($T), T),
 	ptr: ^T,
 	loc := #caller_location,
 ) #no_bounds_check {
@@ -63,48 +61,64 @@ unordered_remove_ptr :: proc(
 }
 
 ordered_remove_ptr :: proc(
-	it: ^$I/ba.Iterator($T),
+	it: ^$I/ba.Typed_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State($T), T),
 	ptr: ^T,
 	loc := #caller_location,
 ) #no_bounds_check {
 	ordered_remove_index(it, index_from_ptr(it, ptr), loc)
 }
 
-unordered_remove_current :: proc(it: ^$I/ba.Iterator($T)) #no_bounds_check {
-	state := ba.state(it, Fixed_Dynamic_Array_Synchronized_Iterator_State(T))
-	fda.unordered_remove(state.array, state.index)
+unordered_remove_current :: proc(
+	it: ^$I/ba.Typed_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State($T), T),
+) #no_bounds_check {
+	fda.unordered_remove(it.state.array, it.state.index)
 }
 
-ordered_remove_current :: proc "contextless" (it: ^$I/ba.Iterator($T)) #no_bounds_check {
+ordered_remove_current :: proc "contextless" (
+	it: ^$I/ba.Typed_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State($T), T),
+) #no_bounds_check {
 	fda.ordered_remove(it.state.array, it.state.index)
 }
 
-push_back :: proc(it: ^$I/ba.Iterator($T), item: T) -> (ok: bool) {
-	state := ba.state(it, Fixed_Dynamic_Array_Synchronized_Iterator_State(T))
-	ok = fda.push_back(state.array, item)
+push_back :: proc(
+	it: ^$I/ba.Typed_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State($T), T),
+	item: T,
+) -> (
+	ok: bool,
+) {
+	ok = fda.push_back(it.state.array, item)
 	if ok {
-		state.expected_len += 1
+		it.state.expected_len += 1
 	}
 	return
 }
 
-pop_back_safe :: proc(it: ^$I/ba.Iterator($T)) -> (item: T, ok: bool) {
-	state := ba.state(it, Fixed_Dynamic_Array_Synchronized_Iterator_State(T))
-	item = fda.pop_back_safe(state.array) or_return
-	state.expected_len -= 1
+pop_back_safe :: proc(
+	it: ^$I/ba.Typed_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State($T), T),
+) -> (
+	item: T,
+	ok: bool,
+) {
+	item = fda.pop_back_safe(it.state.array) or_return
+	it.state.expected_len -= 1
 	return
 }
 
-clear :: proc "contextless" (it: ^$I/ba.Iterator($T)) {
-	state := ba.state(it, Fixed_Dynamic_Array_Synchronized_Iterator_State(T))
-	fda.clear(state.array)
+clear :: proc "contextless" (
+	it: ^$I/ba.Typed_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State($T), T),
+) {
+	fda.clear(it.state.array)
 	state.expected_len = 0
 }
 
-push_back_elems :: proc "contextless" (it: ^$I/ba.Iterator($T), items: ..T) -> (ok: bool) {
+push_back_elems :: proc "contextless" (
+	it: ^$I/ba.Typed_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State($T), T),
+	items: ..T,
+) -> (
+	ok: bool,
+) {
 	count := len(items)
-	state := ba.state(it, Fixed_Dynamic_Array_Synchronized_Iterator_State(T))
-	ok = fda.push_back_elems(state.array, ..items)
+	ok = fda.push_back_elems(it.state.array, ..items)
 	if ok {
 		expected_len += count
 	}
@@ -113,34 +127,34 @@ push_back_elems :: proc "contextless" (it: ^$I/ba.Iterator($T), items: ..T) -> (
 make_sync_iter :: proc(
 	it: ^$A/fda.Fixed_Dynamic_Array($T),
 	auto_reset: bool = false,
-) -> ba.Iterator(T) {
-	return ba.make_iterator(
-		ba.Typed_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State(T), T) {
-			update = proc(state: ^Fixed_Dynamic_Array_Synchronized_Iterator_State(T)) {
-				sync_or_increment(state)
+) -> ba.Typed_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State(T), T) {
+	TII :: ba.Typed_Iterator_Interface(Fixed_Dynamic_Array_Synchronized_Iterator_State(T), T)
+	TI :: ba.Typed_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State(T), T)
+
+	return ba.make_iterator(TI{iface = ba.build_interface(TII {
+			update = proc(it: ^TI) {
+				sync_or_increment(&it.state)
 			},
-			is_valid = proc(state: ^Fixed_Dynamic_Array_Synchronized_Iterator_State(T)) -> bool {
-				if (state.index < state.array.len) {
+			is_valid = proc(it: ^TI) -> bool {
+				if (it.state.index < it.state.array.len) {
 					return true
 				}
 
-				if state.auto_reset {
-					internal_reset(state)
+				if it.state.auto_reset {
+					internal_reset(&it.state)
 				}
 				return false
 			},
-			get_item = proc(state: ^Fixed_Dynamic_Array_Synchronized_Iterator_State(T)) -> ^T {
-				return &state.array.data[state.index]
+			get_item = proc(it: ^TI) -> ^T {
+				return &it.state.array.data[it.state.index]
 			},
-			can_reset = proc(state: ^Fixed_Dynamic_Array_Synchronized_Iterator_State(T)) -> bool {
+			can_reset = proc(it: ^TI) -> bool {
 				return true
 			},
-			reset = proc(state: ^Fixed_Dynamic_Array_Synchronized_Iterator_State(T)) {
-				internal_reset(state)
+			reset = proc(it: ^TI) {
+				internal_reset(&it.state)
 			},
-			state = {{-1}, it, fda.len(it^), auto_reset},
-		},
-	)
+		}), state = {{-1}, it, fda.len(it^), auto_reset}})
 }
 
 @(private = "file")
@@ -177,9 +191,11 @@ internal_reset :: proc "contextless" (
 }
 
 @(private)
-index_from_ptr :: proc(it: ^$I/ba.Iterator($T), ptr: ^T) -> int {
-	state := ba.state(it, Fixed_Dynamic_Array_Synchronized_Iterator_State(T))
-	return mem.ptr_sub(ptr, &state.array.data[0])
+index_from_ptr :: proc(
+	it: ^$I/ba.Typed_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State($T), T),
+	ptr: ^T,
+) -> int {
+	return mem.ptr_sub(ptr, &it.state.array.data[0])
 }
 
 unordered_remove :: proc {

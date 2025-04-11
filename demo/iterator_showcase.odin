@@ -11,32 +11,38 @@ when RUN_ITER_DEMO {
 	}
 	CountingIterator :: ba.Typed_Iterator(Counting_State, int)
 
-	make_counting_iter :: proc(count: int) -> ba.Iterator(int) {
-		update :: proc(state: ^Counting_State) {
-			state.index += 1
+	make_counting_iter :: proc(count: int) -> ba.Typed_Iterator(Counting_State, int) {
+		TII :: ba.Typed_Iterator_Interface(Counting_State, int)
+		TI :: ba.Typed_Iterator(Counting_State, int)
+		update :: proc(it: ^TI) {
+			it.state.index += 1
 		}
-		get_item :: proc(state: ^Counting_State) -> ^int {
-			state.tmp = state.index
-			return &state.tmp
+		get_item :: proc(it: ^TI) -> ^int {
+			it.state.tmp = it.state.index
+			return &it.state.tmp
 		}
-		is_valid :: proc(state: ^Counting_State) -> bool {
-			return state.index < state.count
+		is_valid :: proc(it: ^TI) -> bool {
+			return it.state.index < it.state.count
 		}
-		can_reset :: proc(state: ^Counting_State) -> bool {
+		can_reset :: proc(it: ^TI) -> bool {
 			return true
 		}
-		reset :: proc(state: ^Counting_State) {
-			state.index = -1
-			state.count = state.original_count
+		reset :: proc(it: ^TI) {
+			it.state.index = -1
+			it.state.count = it.state.original_count
 		}
 
 		return ba.make_iterator(
 			CountingIterator {
-				update = update,
-				get_item = get_item,
-				is_valid = is_valid,
-				can_reset = can_reset,
-				reset = reset,
+				iface = ba.build_interface(
+					TII {
+						update = update,
+						get_item = get_item,
+						is_valid = is_valid,
+						can_reset = can_reset,
+						reset = reset,
+					},
+				),
 				state = {{-1}, count, count, 0},
 			},
 		)

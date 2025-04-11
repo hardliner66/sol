@@ -5,30 +5,33 @@ be useful for others as well.
 
 **WARNING: I do not consider all parts of this stable or finished. Especially the iterator stuff needs some polish.**
 
-- _**What works:** The expression evaluator, the fixed dynamic array and the stack tracking allocator should be ready._
-- _**What works, but needs works:** The iterator stuff currently uses fixed size storage, making every iterator the same size. I haven't found a better way to handle that yet, so if thats okay, it should be good to go as well._
+- _**What works:** The expression evaluator, the fixed dynamic array, iterators and the stack tracking allocator should be ready._
 - _**What probably works:** The opaque stuff should work as well, but as its quite low level, there might be hidden bugs that will be hard to track down. Use at your own risk._
 - _**What you shouldn't use:** Everything inside the experiments folder. Currently there is only the slice abuse, but that relies on implementation details and could break with every compiler update._
 
-- [Opaque](#opaque)
-  - [Types](#types)
-    - [OpaqueInline](#opaqueinline)
-    - [OpaqueBoxed](#opaqueboxed)
-    - [OpaquePtr](#opaqueptr)
-  - [When to use which opaque type](#when-to-use-which-opaque-type)
-- [Iter](#iter)
-- [Fixed Dynamic Array](#fixed-dynamic-array)
-  - [Fixed Dynamic Array / Iter](#fixed-dynamic-array--iter)
-- [Expression Evaluator](#expression-evaluator)
-- [Stack Tracking Allocator](#stack-tracking-allocator)
+<!-- omit in toc -->
+## Table of contents
+- [Types](#types)
+  - [Opaque](#opaque)
+    - [Variants](#variants)
+      - [OpaqueInline](#opaqueinline)
+      - [OpaqueBoxed](#opaqueboxed)
+      - [OpaquePtr](#opaqueptr)
+    - [When to use which opaque type](#when-to-use-which-opaque-type)
+  - [Iter](#iter)
+  - [Fixed Dynamic Array](#fixed-dynamic-array)
+    - [Fixed Dynamic Array / Iter](#fixed-dynamic-array--iter)
+  - [Expression Evaluator](#expression-evaluator)
+  - [Stack Tracking Allocator](#stack-tracking-allocator)
 
-## Opaque
+## Types
+### Opaque
 Adds opaque types that can be used to store or pass data with its type erased.
 
 **WARNING: This code transmutes. Use at your own risk.**
 
-### Types
-#### OpaqueInline
+#### Variants
+##### OpaqueInline
 OpaqueInline stores the data internally as a statically sized byte array.
 
 This makes it the simplest opaque type to use, but it comes with a few restrictions.
@@ -49,7 +52,7 @@ or its data is going to be invalid. The upside is, that you don't need to manual
 
 As the whole thing lives on the stack, you cannot store more data than the stack holds.
 
-#### OpaqueBoxed
+##### OpaqueBoxed
 OpaqueBoxed stores the data internally as a slice of bytes, which gets allocated on creation.
 It also stores which allocator was used, so it can use the same allocator when it gets destroyed.
 
@@ -59,14 +62,14 @@ valid until it is destroyed.
 The biggest drawback is, that you need to call `destroy_boxed_opaque` on it when you're done,
 otherwise it will leak its memory.
 
-#### OpaquePtr
+##### OpaquePtr
 This is the simplest of the opaque types, yet it can be quite tricky to use.
 Instead of storing the data directly, it takes a pointer and stores it as a rawptr (void* in c).
 
 This means that its your job to guarantee that the data it points to stays valid while the
 OpaquePtr is in use.
 
-### When to use which opaque type
+#### When to use which opaque type
 
 If the data is already on the heap and you just need to store a reference in an untyped manner,
 use an `OpaquePtr`.
@@ -76,17 +79,12 @@ use an `OpaqueInline`.
 
 In any other case use an `OpaqueBoxed`.
 
-## Iter
+### Iter
 The iter package defines an interface for iterators,
 which can be implemented to allow functions to take a generic iterator,
 without knowing exactly how it works underneath.
 
-**WARNING: This code transmutes. Use at your own risk.**
-
-I _think_ everything should work fine, but if you're unsure,
-you probably want to avoid stuff related to iter and opaque.
-
-## Fixed Dynamic Array
+### Fixed Dynamic Array
 The name might seem like it contradicts itself,
 but I couldn't think of a better one, so it has to do for now.
 
@@ -98,7 +96,7 @@ combined with the interface of a dynamic array.
 
 _So append away and don't worry about keeping track where to put the next element!_
 
-### Fixed Dynamic Array / Iter
+#### Fixed Dynamic Array / Iter
 It's iter time again. The `fixed_dynamic_array` library has a subfolder containing
 the code for an iterator and code to safely manipulate the underlying container,
 even while iterating.
@@ -112,7 +110,7 @@ basically just a decrement of the length plus moving one element.
 Combined with the iterator, it should allow for a simple, yet still performant,
 way to handle data in your application.
 
-## Expression Evaluator
+### Expression Evaluator
 Also something I use in the game mentioned above.
 
 If you ever have to need to do some calculations, but want to manage the formulas
@@ -132,7 +130,7 @@ with a call to the `eval_expr` function. The second way is useful if you need to
 a formula multiple times, so you can cache the parsed expressions and
 don't have to parse it over and over again.
 
-## Stack Tracking Allocator
+### Stack Tracking Allocator
 This is basically the tracking allocator from the stdlib,
 but it stores a stack trace for the allocation as well.
 

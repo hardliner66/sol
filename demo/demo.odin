@@ -9,7 +9,6 @@ RUN_OPAQUE_DEMO :: #config(RUN_OPAQUE_DEMO, true)
 RUN_STA_DEMO :: #config(RUN_STA_DEMO, true)
 
 import "core:fmt"
-import "core:log"
 import "core:mem"
 
 import sta "../stack_tracking_allocator"
@@ -17,14 +16,14 @@ import sta "../stack_tracking_allocator"
 showcase :: proc()
 
 run_showcase :: proc(sc: showcase, name: string, track: ^sta.Stack_Tracking_Allocator) {
-	log.infof("=== %s Showcase ===", name)
-	log.info()
+	fmt.printfln("=== %s Showcase ===", name)
+	fmt.println()
 	old := len(track.allocation_map)
 	sc()
-	log.info()
-	log.infof("=== Allocations: %v ===", len(track.allocation_map) - old)
-	log.info()
-	log.info()
+	fmt.println()
+	fmt.printfln("=== Allocations: %v ===", len(track.allocation_map) - old)
+	fmt.println()
+	fmt.println()
 }
 
 global_trace_ctx: sta.Context
@@ -60,7 +59,6 @@ main :: proc() {
 	mem.dynamic_arena_init(&pool)
 	defer mem.dynamic_arena_destroy(&pool)
 	log_alloc = mem.dynamic_arena_allocator(&pool)
-	context.logger = log.create_console_logger(allocator = log_alloc)
 
 	when RUN_FDA_DEMO {
 		run_showcase(showcase_fixed_dynamic_array, "Fixed Dynamic Array", &track)
