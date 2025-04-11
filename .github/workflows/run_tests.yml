@@ -7,39 +7,29 @@ on:
 
 jobs:
   run_tests:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
     name: Run Tests
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Clone Odin
-        run: |
-          git clone --recursive https://github.com/odin-lang/Odin
+      - name: Cache Odin
+        id: cache-odin
+        uses: actions/cache@v3
+        with:
+          path: odin_bin
+          key: odin-dev-2025-04
 
-      - name: Set up Odin (Windows)
-        if: runner.os == 'Windows'
+      - name: Set up Odin
+        if: steps.cache-odin.outputs.cache-hit != 'true'
         run: |
-          cd Odin
-          .\build.bat release
+          wget https://github.com/odin-lang/Odin/releases/download/dev-2025-04/odin-ubuntu-amd64-dev-2025-04.zip
+          unzip odin-ubuntu-amd64-dev-2025-04.zip
+          tar -xf dist.tar.gz
+          mv odin-linux-amd64-nightly+2025-04-03 odin_bin
 
-      - name: Set up Odin (Linux)
-        if: runner.os != 'Windows'
+      - name: Run tests
         run: |
-          cd Odin
-          ./build_odin.sh release
-
-      - name: Run tests /Windows
-        if: runner.os == 'Windows'
-        run: |
-          call Odin/odin.exe test tests -all-packages -debug
-
-      - name: Run tests (Linux)
-        if: runner.os != 'Windows'
-        run: |
-          ./Odin/odin test tests -all-packages -debug
+          ./odin_bin/odin test tests -all-packages -debug
