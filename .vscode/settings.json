@@ -5,6 +5,7 @@
         "elems",
         "infof",
         "punct",
+        "rawptr",
         "strconv"
     ],
     "editor.formatOnSave": true,

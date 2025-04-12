@@ -9,7 +9,7 @@ when RUN_ITER_DEMO {
 		original_count: int,
 		tmp:            int,
 	}
-	CountingIterator :: ba.State_Aware_Iterator(Counting_State, int)
+	Counting_Iterator :: ba.State_Aware_Iterator(Counting_State, int)
 
 	make_counting_iter :: proc(count: int) -> ba.State_Aware_Iterator(Counting_State, int) {
 		TII :: ba.State_Aware_Iterator_Interface(Counting_State, int)
@@ -33,8 +33,8 @@ when RUN_ITER_DEMO {
 		}
 
 		return ba.make_iterator(
-			CountingIterator {
-				iface = ba.build_interface(
+			Counting_Iterator {
+				interface = ba.build_interface(
 					TII {
 						update = update,
 						get_item = get_item,

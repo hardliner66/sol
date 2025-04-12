@@ -49,8 +49,8 @@ State_Aware_Iterator_Interface :: struct($State: typeid, $T: typeid) {
 }
 
 State_Aware_Iterator :: struct($State: typeid, $T: typeid) {
-	using iface: Iterator_Interface(T),
-	state:       State,
+	using interface: Iterator_Interface(T),
+	state:           State,
 }
 
 make_iterator :: proc(it: $I/State_Aware_Iterator($S, $T)) -> I {

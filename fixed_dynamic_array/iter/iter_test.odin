@@ -7,7 +7,7 @@ import "core:testing"
 
 @(test)
 tests :: proc(t: ^testing.T) {
-	// Test FixedDynamicArray basic functionality
+	// Test Fixed_Dynamic_Array basic functionality
 	array := fda.create(int, 10)
 	defer fda.destroy(&array)
 
@@ -33,7 +33,7 @@ tests :: proc(t: ^testing.T) {
 	testing.expect(t, item == 2)
 	testing.expect(t, fda.len(array) == 1)
 
-	// Test FixedDynamicArray synchronized iterator
+	// Test Fixed_Dynamic_Array synchronized iterator
 	iter := make_sync_iter(&array, auto_reset = true)
 
 	// Add elements to the array

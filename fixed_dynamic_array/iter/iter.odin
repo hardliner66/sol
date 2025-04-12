@@ -131,7 +131,7 @@ make_sync_iter :: proc(
 	TII :: ba.State_Aware_Iterator_Interface(Fixed_Dynamic_Array_Synchronized_Iterator_State(T), T)
 	TI :: ba.State_Aware_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State(T), T)
 
-	return ba.make_iterator(TI{iface = ba.build_interface(TII {
+	return ba.make_iterator(TI{interface = ba.build_interface(TII {
 			update = proc(it: ^TI) {
 				sync_or_increment(&it.state)
 			},
