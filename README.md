@@ -11,6 +11,7 @@ be useful for others as well.
 
 <!-- omit in toc -->
 ## Table of contents
+- [History aka why this exists](#history-aka-why-this-exists)
 - [Types](#types)
   - [Opaque](#opaque)
     - [Variants](#variants)
@@ -23,6 +24,15 @@ be useful for others as well.
     - [Fixed Dynamic Array / Iter](#fixed-dynamic-array--iter)
   - [Expression Evaluator](#expression-evaluator)
   - [Stack Tracking Allocator](#stack-tracking-allocator)
+
+## History aka why this exists
+
+This is a collection of things I implemented for the game I'm working on,
+which I decided to publish, because others might find it useful as well.
+
+For a deep-dive on how each part came to be, you can check out
+[my blog](https://blog.hardliner.codes/posts/01-my-odin-library)
+and read about it there.
 
 ## Types
 ### Opaque
