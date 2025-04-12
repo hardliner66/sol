@@ -4,74 +4,73 @@ Base_State :: struct {
 	index: int,
 }
 
-Iterator_Interface :: struct($T: typeid) {
-	get_index: proc(it: ^Iterator_Interface(T)) -> int,
-	is_dead:   proc(it: ^Iterator_Interface(T)) -> bool,
-	update:    proc(it: ^Iterator_Interface(T)),
-	is_valid:  proc(it: ^Iterator_Interface(T)) -> bool,
-	get_item:  proc(it: ^Iterator_Interface(T)) -> ^T,
-	can_reset: proc(it: ^Iterator_Interface(T)) -> bool,
-	reset:     proc(it: ^Iterator_Interface(T)),
-}
-
-Typed_Iterator_Interface :: struct($State: typeid, $T: typeid) {
+// Helper struct, to keep the order of the procs in the interface consistent across all implementations
+Iterator_Interface_Definition :: struct($IT: typeid, $T: typeid) {
 	/// OPTIONAL
 	/// Retrieves the current index of the iterator
 	/// This gets returned to the user when calling next_val or next_ref
 	/// so it can be used as an index in the for loop
 	/// DEFAULT: returns the index from the base state
-	get_index: proc(it: ^Typed_Iterator(State, T)) -> int,
+	get_index: proc(it: ^IT) -> int,
 	/// OPTIONAL
 	/// Checks if the iterator is dead.
 	/// An iterator is considered dead, when it has been determined that
 	/// is no longer valid and cannot be used anymore. Not even after a reset.
 	/// DEFAULT: returns false
-	is_dead:   proc(it: ^Typed_Iterator(State, T)) -> bool,
+	is_dead:   proc(it: ^IT) -> bool,
 	/// REQUIRED
 	/// Advances the the iterator by updating its internal state
-	update:    proc(it: ^Typed_Iterator(State, T)),
+	update:    proc(it: ^IT),
 	/// REQUIRED
 	/// Checks if the iterator is in a valid state to return an item.
-	is_valid:  proc(it: ^Typed_Iterator(State, T)) -> bool,
+	is_valid:  proc(it: ^IT) -> bool,
 	/// REQUIRED
 	/// Returns a pointer to the current item of the iterator.
 	/// We need to return a pointer here,
 	/// otherwise iterating with reference semantics wouldn't work
-	get_item:  proc(it: ^Typed_Iterator(State, T)) -> ^T,
+	get_item:  proc(it: ^IT) -> ^T,
 	/// OPTIONAL
 	/// Returns if the iterator can be reset, so it can be reused.
 	/// DEFAULT: returns false
-	can_reset: proc(it: ^Typed_Iterator(State, T)) -> bool,
+	can_reset: proc(it: ^IT) -> bool,
 	/// OPTIONAL
 	/// Changes the internal state of the iterator,
 	/// so it can be used again
 	/// DEFAULT: does nothing
-	reset:     proc(it: ^Typed_Iterator(State, T)),
+	reset:     proc(it: ^IT),
 }
 
-Typed_Iterator :: struct($State: typeid, $T: typeid) {
+Iterator_Interface :: struct($T: typeid) {
+	using _: Iterator_Interface_Definition(Iterator_Interface(T), T),
+}
+
+State_Aware_Iterator_Interface :: struct($State: typeid, $T: typeid) {
+	using _: Iterator_Interface_Definition(State_Aware_Iterator(State, T), T),
+}
+
+State_Aware_Iterator :: struct($State: typeid, $T: typeid) {
 	using iface: Iterator_Interface(T),
 	state:       State,
 }
 
-make_iterator :: proc(it: $I/Typed_Iterator($S, $T)) -> I {
+make_iterator :: proc(it: $I/State_Aware_Iterator($S, $T)) -> I {
 	return validate_iterator(it)
 }
 
-build_interface :: proc(it: $I/Typed_Iterator_Interface($S, $T)) -> Iterator_Interface(T) {
+build_interface :: proc(it: $I/State_Aware_Iterator_Interface($S, $T)) -> Iterator_Interface(T) {
 	return transmute(Iterator_Interface(T))(it)
 }
 
-from_typed :: proc(it: ^$I/Typed_Iterator($S, $T)) -> ^Iterator_Interface(T) {
+from_typed :: proc(it: ^$I/State_Aware_Iterator($S, $T)) -> ^Iterator_Interface(T) {
 	return (^Iterator_Interface(T))(it)
 }
 
-to_typed :: proc(it: ^Iterator_Interface($T), $S: typeid) -> ^Typed_Iterator(S, T) {
-	return (^Typed_Iterator(S, T))(it)
+to_typed :: proc(it: ^Iterator_Interface($T), $S: typeid) -> ^State_Aware_Iterator(S, T) {
+	return (^State_Aware_Iterator(S, T))(it)
 }
 
 @(private)
-validate_iterator :: proc(it: $I/Typed_Iterator($S, $T)) -> I {
+validate_iterator :: proc(it: $I/State_Aware_Iterator($S, $T)) -> I {
 	it := it
 	assert(it.update != nil, "update must be set")
 	assert(it.is_valid != nil, "valid must be set")
@@ -110,7 +109,13 @@ next_ref_untyped :: proc(it: ^$I/Iterator_Interface($T)) -> (result: ^T, index: 
 	return {}, -1, false
 }
 
-next_ref_typed :: proc(it: ^$I/Typed_Iterator($S, $T)) -> (result: ^T, index: int, ok: bool) {
+next_ref_typed :: proc(
+	it: ^$I/State_Aware_Iterator($S, $T),
+) -> (
+	result: ^T,
+	index: int,
+	ok: bool,
+) {
 	if it.is_dead(it) {
 		return {}, -1, false
 	}
@@ -133,7 +138,7 @@ next_val_untyped :: proc(it: ^$I/Iterator_Interface($T)) -> (result: T, index: i
 	return tmp^, index, true
 }
 
-next_val_typed :: proc(it: ^$I/Typed_Iterator($S, $T)) -> (result: T, index: int, ok: bool) {
+next_val_typed :: proc(it: ^$I/State_Aware_Iterator($S, $T)) -> (result: T, index: int, ok: bool) {
 	tmp: ^T
 	tmp, index = next_ref(it) or_return
 	return tmp^, index, true
@@ -150,7 +155,7 @@ reset_untyped :: proc(it: ^$I/Iterator_Interface($T)) -> bool {
 	return true
 }
 
-reset_typed :: proc(it: ^$I/Typed_Iterator($S, $T)) -> bool {
+reset_typed :: proc(it: ^$I/State_Aware_Iterator($S, $T)) -> bool {
 	it.can_reset(it) or_return
 	it.reset(it)
 	return true

@@ -21,7 +21,7 @@ next_val :: ba.next_val
 reset :: ba.reset
 
 unordered_remove_index :: proc(
-	it: ^$I/ba.Typed_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State($T), T),
+	it: ^$I/ba.State_Aware_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State($T), T),
 	index: int,
 	loc := #caller_location,
 ) #no_bounds_check {
@@ -36,7 +36,7 @@ unordered_remove_index :: proc(
 }
 
 ordered_remove_index :: proc(
-	it: ^$I/ba.Typed_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State($T), T),
+	it: ^$I/ba.State_Aware_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State($T), T),
 	index: int,
 	loc := #caller_location,
 ) #no_bounds_check {
@@ -53,7 +53,7 @@ ordered_remove_index :: proc(
 }
 
 unordered_remove_ptr :: proc(
-	it: ^$I/ba.Typed_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State($T), T),
+	it: ^$I/ba.State_Aware_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State($T), T),
 	ptr: ^T,
 	loc := #caller_location,
 ) #no_bounds_check {
@@ -61,7 +61,7 @@ unordered_remove_ptr :: proc(
 }
 
 ordered_remove_ptr :: proc(
-	it: ^$I/ba.Typed_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State($T), T),
+	it: ^$I/ba.State_Aware_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State($T), T),
 	ptr: ^T,
 	loc := #caller_location,
 ) #no_bounds_check {
@@ -69,19 +69,19 @@ ordered_remove_ptr :: proc(
 }
 
 unordered_remove_current :: proc(
-	it: ^$I/ba.Typed_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State($T), T),
+	it: ^$I/ba.State_Aware_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State($T), T),
 ) #no_bounds_check {
 	fda.unordered_remove(it.state.array, it.state.index)
 }
 
 ordered_remove_current :: proc "contextless" (
-	it: ^$I/ba.Typed_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State($T), T),
+	it: ^$I/ba.State_Aware_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State($T), T),
 ) #no_bounds_check {
 	fda.ordered_remove(it.state.array, it.state.index)
 }
 
 push_back :: proc(
-	it: ^$I/ba.Typed_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State($T), T),
+	it: ^$I/ba.State_Aware_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State($T), T),
 	item: T,
 ) -> (
 	ok: bool,
@@ -94,7 +94,7 @@ push_back :: proc(
 }
 
 pop_back_safe :: proc(
-	it: ^$I/ba.Typed_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State($T), T),
+	it: ^$I/ba.State_Aware_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State($T), T),
 ) -> (
 	item: T,
 	ok: bool,
@@ -105,14 +105,14 @@ pop_back_safe :: proc(
 }
 
 clear :: proc "contextless" (
-	it: ^$I/ba.Typed_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State($T), T),
+	it: ^$I/ba.State_Aware_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State($T), T),
 ) {
 	fda.clear(it.state.array)
 	state.expected_len = 0
 }
 
 push_back_elems :: proc "contextless" (
-	it: ^$I/ba.Typed_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State($T), T),
+	it: ^$I/ba.State_Aware_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State($T), T),
 	items: ..T,
 ) -> (
 	ok: bool,
@@ -127,9 +127,9 @@ push_back_elems :: proc "contextless" (
 make_sync_iter :: proc(
 	it: ^$A/fda.Fixed_Dynamic_Array($T),
 	auto_reset: bool = false,
-) -> ba.Typed_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State(T), T) {
-	TII :: ba.Typed_Iterator_Interface(Fixed_Dynamic_Array_Synchronized_Iterator_State(T), T)
-	TI :: ba.Typed_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State(T), T)
+) -> ba.State_Aware_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State(T), T) {
+	TII :: ba.State_Aware_Iterator_Interface(Fixed_Dynamic_Array_Synchronized_Iterator_State(T), T)
+	TI :: ba.State_Aware_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State(T), T)
 
 	return ba.make_iterator(TI{iface = ba.build_interface(TII {
 			update = proc(it: ^TI) {
@@ -192,7 +192,7 @@ internal_reset :: proc "contextless" (
 
 @(private)
 index_from_ptr :: proc(
-	it: ^$I/ba.Typed_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State($T), T),
+	it: ^$I/ba.State_Aware_Iterator(Fixed_Dynamic_Array_Synchronized_Iterator_State($T), T),
 	ptr: ^T,
 ) -> int {
 	return mem.ptr_sub(ptr, &it.state.array.data[0])

@@ -9,11 +9,11 @@ when RUN_ITER_DEMO {
 		original_count: int,
 		tmp:            int,
 	}
-	CountingIterator :: ba.Typed_Iterator(Counting_State, int)
+	CountingIterator :: ba.State_Aware_Iterator(Counting_State, int)
 
-	make_counting_iter :: proc(count: int) -> ba.Typed_Iterator(Counting_State, int) {
-		TII :: ba.Typed_Iterator_Interface(Counting_State, int)
-		TI :: ba.Typed_Iterator(Counting_State, int)
+	make_counting_iter :: proc(count: int) -> ba.State_Aware_Iterator(Counting_State, int) {
+		TII :: ba.State_Aware_Iterator_Interface(Counting_State, int)
+		TI :: ba.State_Aware_Iterator(Counting_State, int)
 		update :: proc(it: ^TI) {
 			it.state.index += 1
 		}
