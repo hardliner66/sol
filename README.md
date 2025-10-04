@@ -22,6 +22,7 @@ be useful for others as well.
   - [Iter](#iter)
   - [Fixed Dynamic Array](#fixed-dynamic-array)
     - [Fixed Dynamic Array / Iter](#fixed-dynamic-array--iter)
+  - [Rustic](#rustic)
   - [Expression Evaluator](#expression-evaluator)
   - [Stack Tracking Allocator](#stack-tracking-allocator)
 
@@ -119,6 +120,9 @@ As the Fixed Dynamic Array supports unordered removes, deleting an element is
 basically just a decrement of the length plus moving one element.
 Combined with the iterator, it should allow for a simple, yet still performant,
 way to handle data in your application.
+
+### Rustic
+Rust inspired helpers for errors and options.
 
 ### Expression Evaluator
 Also something I use in the game mentioned above.

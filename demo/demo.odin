@@ -2,11 +2,12 @@
 
 package demo
 
-RUN_FDA_DEMO :: #config(RUN_FDA_DEMO, true)
-RUN_EE_DEMO :: #config(RUN_EE_DEMO, true)
-RUN_ITER_DEMO :: #config(RUN_ITER_DEMO, true)
-RUN_OPAQUE_DEMO :: #config(RUN_OPAQUE_DEMO, true)
-RUN_STA_DEMO :: #config(RUN_STA_DEMO, true)
+RUN_FDA_DEMO :: #config(RUN_FDA_DEMO, false)
+RUN_EE_DEMO :: #config(RUN_EE_DEMO, false)
+RUN_ITER_DEMO :: #config(RUN_ITER_DEMO, false)
+RUN_OPAQUE_DEMO :: #config(RUN_OPAQUE_DEMO, false)
+RUN_STA_DEMO :: #config(RUN_STA_DEMO, false)
+RUN_RUSTIC_DEMO :: #config(RUN_RUSTIC_DEMO, true)
 
 import "core:fmt"
 import "core:mem"
@@ -74,6 +75,9 @@ main :: proc() {
 	}
 	when RUN_STA_DEMO {
 		run_showcase(showcase_stack_tracking_allocator, "Stack Tracking Allocator", &track)
+	}
+	when RUN_RUSTIC_DEMO {
+		run_showcase(showcase_rustic, "Rustic", &track)
 	}
 
 	free_all(log_alloc)

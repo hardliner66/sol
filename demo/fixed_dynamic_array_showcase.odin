@@ -1,10 +1,10 @@
 package demo
 
-import fda "../fixed_dynamic_array"
-import fda_iter "../fixed_dynamic_array/iter"
-import ba "../iter"
+@(require) import fda "../fixed_dynamic_array"
+@(require) import fda_iter "../fixed_dynamic_array/iter"
+@(require) import ba "../iter"
 
-import "core:mem"
+@(require) import "core:mem"
 
 when RUN_FDA_DEMO {
 	ITEM_COUNT :: #config(ITEM_COUNT, 100)

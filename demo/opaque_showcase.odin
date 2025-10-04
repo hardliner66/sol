@@ -1,9 +1,9 @@
 package demo
 
-import op "../opaque"
+@(require) import op "../opaque"
 
-import "core:fmt"
-import "core:mem"
+@(require) import "core:fmt"
+@(require) import "core:mem"
 
 when RUN_OPAQUE_DEMO {
 	Some_Type :: struct {

@@ -2,10 +2,10 @@
 
 package demo
 
-import ee "../expression_evaluator"
+@(require) import ee "../expression_evaluator"
 
-import "core:fmt"
-import "core:math"
+@(require) import "core:fmt"
+@(require) import "core:math"
 
 when RUN_EE_DEMO {
 	showcase_expression_evaluator :: proc() {

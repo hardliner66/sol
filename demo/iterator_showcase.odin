@@ -1,6 +1,6 @@
 package demo
 
-import ba "../iter"
+@(require) import ba "../iter"
 
 when RUN_ITER_DEMO {
 	Counting_State :: struct {
